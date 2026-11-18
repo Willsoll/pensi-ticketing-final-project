@@ -1,0 +1,50 @@
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Logs
+*.log
+storage/logs/*.log
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+
+# Database files (we have SQL dumps)
+mysql/data/
+
+# Uploaded files (user content)
+uploads/bukti/*
+!uploads/bukti/.htaccess
+
+# XAMPP internal files
+xampp/
+dashboard/
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Node modules (if any)
+node_modules/
+
+# Vendor (if using Composer)
+vendor/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# SSL certificates
+*.pem
+*.key
+*.crt
