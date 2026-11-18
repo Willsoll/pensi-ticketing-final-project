@@ -1,0 +1,99 @@
+# ============================================================
+# PAKET 7 - Security configuration (Apache .htaccess)
+# Only directives valid in .htaccess are used here.
+# ============================================================
+
+# ------------------------------------------------------------
+# Security headers
+# ------------------------------------------------------------
+<IfModule mod_headers.c>
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    Header always set X-Frame-Options "DENY"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=(), usb=()"
+    Header always set X-Permitted-Cross-Domain-Policies "none"
+    Header always set Cross-Origin-Opener-Policy "same-origin"
+    Header always set Cross-Origin-Resource-Policy "same-origin"
+    Header always unset X-Powered-By
+    Header always unset Server
+    Header set Server "Apache"
+    Header always set Cache-Control "no-store, no-cache, must-revalidate, max-age=0" env=NO_CACHE
+</IfModule>
+
+# ------------------------------------------------------------
+# PHP hardening
+# ------------------------------------------------------------
+<IfModule mod_php.c>
+    php_flag display_errors Off
+    php_flag log_errors On
+    php_value error_log "C:/xampp/htdocs/storage/logs/php_errors.log"
+    php_flag expose_php Off
+    php_flag allow_url_fopen Off
+    php_flag allow_url_include Off
+    php_flag session.use_only_cookies On
+    php_flag session.use_strict_mode On
+    php_flag session.cookie_httponly On
+    php_value session.cookie_samesite "Strict"
+    php_value session.gc_maxlifetime 900
+    # PHP2Shell (CVE-2026-109619) mitigation / session upload progress is not used.
+    php_flag session.upload_progress.enabled Off
+    php_flag session.upload_progress.cleanup On
+</IfModule>
+
+# Prevent directory listing, CGI execution, and SSI.
+Options -Indexes -ExecCGI -Includes
+IndexIgnore *
+
+# ------------------------------------------------------------
+# Block sensitive files
+# ------------------------------------------------------------
+<FilesMatch "(^\.|\.(sql|log|ini|env|bak|old|orig|save|swp|swo|tmp|dist|sh|bat|ps1|yml|yaml|lock|md|shtml|stm|user\.ini|phar|htaccess|htaccess\.bak)$)">
+    Require all denied
+</FilesMatch>
+
+# Credentials/config must never be directly reachable
+<FilesMatch "^(database|middleware|middleware_fixed|middleware_full)\.php$">
+    Require all denied
+</FilesMatch>
+
+# ------------------------------------------------------------
+# Disable TRACE/TRACK and block sensitive paths
+# ------------------------------------------------------------
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    RewriteCond %{REQUEST_METHOD} ^(TRACE|TRACK)$ [NC]
+    RewriteRule .* - [F,L]
+
+    RewriteRule ^(config|storage|tests|docs)(/|$) - [F,L,NC]
+    RewriteRule ^\.git - [F,L,NC]
+    RewriteRule ^\.env - [F,L,NC]
+    RewriteRule ^composer\.(json|lock)$ - [F,L,NC]
+    RewriteRule ^dashboard/phpinfo\.php$ - [F,L,NC]
+    RewriteRule \.(bak|old|orig|save|swp|swo|tmp|sql|log|ini|env|dist)$ - [F,L,NC]
+
+    # Common webshell / exploit probe names (defense in depth, not a WAF)
+    RewriteRule (shell|webshell|c99|r57|wso|b374k|backdoor) - [F,L,NC]
+    RewriteRule (xmlrpc|wp-admin|wp-login|wp-includes|wp-content|administrator|phpmyadmin|adminer) - [F,L,NC]
+
+    # Null byte and path traversal probes
+    RewriteCond %{QUERY_STRING} (%00|\x00) [NC,OR]
+    RewriteCond %{QUERY_STRING} (\.\./|\.\.\\|%2e%2e%2f|%2e%2e%5c) [NC]
+    RewriteRule .* - [F,L]
+</IfModule>
+
+# ------------------------------------------------------------
+# No dynamic compression (avoids BREACH-style side channels)
+# ------------------------------------------------------------
+<IfModule mod_deflate.c>
+    SetEnv no-gzip 1
+</IfModule>
+
+# ------------------------------------------------------------
+# Error handling: no stack traces / version disclosure
+# ------------------------------------------------------------
+ErrorDocument 403 /error.php?code=403
+ErrorDocument 404 /error.php?code=404
+ErrorDocument 500 /error.php?code=500

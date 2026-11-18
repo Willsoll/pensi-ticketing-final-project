@@ -1,0 +1,4 @@
+# Bukti transfer adalah data pribadi. Hanya boleh disajikan melalui
+# bukti.php (proxy terautentikasi), bukan akses langsung.
+Require all denied
+Options -Indexes

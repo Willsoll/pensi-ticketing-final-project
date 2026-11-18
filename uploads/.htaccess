@@ -1,0 +1,10 @@
+# Uploaded content is untrusted data. Never execute it.
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+Options -Indexes -ExecCGI -Includes
+RemoveHandler .php .phtml .phar .php3 .php4 .php5 .php7 .php8 .phps .cgi .pl .py .sh .bat
+RemoveType .php .phtml .phar .php3 .php4 .php5 .php7 .php8 .phps
+<FilesMatch "\.(php|phtml|phar|php[0-9]?|phps|cgi|pl|py|sh|bat|htaccess|shtml|stm)$">
+    Require all denied
+</FilesMatch>
