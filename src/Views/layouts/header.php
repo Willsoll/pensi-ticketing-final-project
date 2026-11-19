@@ -59,6 +59,7 @@ function nav_icon(string $name): string
     <?php if ((int)$pensi_theme <= 5): ?>
     <link rel="stylesheet" href="<?= e(base_url('assets/css/themes/_dark-fixes.css')) ?>">
     <?php endif; ?>
+    <link rel="stylesheet" href="<?= e(base_url('assets/css/ui-fixes.css')) ?>">
     <style>
         .skip-link { position:absolute;left:-9999px;top:0;background:#F97316;color:#111827;padding:8px 14px;z-index:9999;border-radius:0 0 8px 0; }
         .skip-link:focus { left:0; }

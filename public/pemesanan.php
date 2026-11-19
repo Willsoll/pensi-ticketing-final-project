@@ -202,6 +202,21 @@ require __DIR__ . '/../src/Views/layouts/header.php';
     </div>
 
     <div style="margin-top:16px;">
+        <div class="form-group" style="margin-bottom:18px;">
+            <label class="form-label">Metode Pembayaran</label>
+            <div class="pay-methods">
+                <label class="pay-option">
+                    <input type="radio" name="metode_bayar" value="Transfer" checked>
+                    <span class="pay-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="6" width="20" height="13" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg></span>
+                    <span><strong>Transfer Bank</strong><small>BCA 7615553221 &middot; a.n. Panitia PENSI</small></span>
+                </label>
+                <label class="pay-option">
+                    <input type="radio" name="metode_bayar" value="Cash">
+                    <span class="pay-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 9v6M18 9v6"/></svg></span>
+                    <span><strong>Tunai (Cash)</strong><small>Bayar langsung ke sekretariat panitia</small></span>
+                </label>
+            </div>
+        </div>
         <button type="submit" class="btn btn-primary" style="padding:14px 28px;">Lanjut ke Checkout &rarr;</button>
     </div>
 </form>

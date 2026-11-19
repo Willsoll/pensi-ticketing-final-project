@@ -78,7 +78,8 @@ if (( $_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 
         // Hanya Waiting Verification, atau Pending yang sudah melampirkan bukti.
         $bisaDiverifikasi = $trx['status_bayar'] === 'Waiting Verification'
-            || ($trx['status_bayar'] === 'Pending' && !empty($trx['bukti_bayar']));
+            || ($trx['status_bayar'] === 'Pending'
+                && (!empty($trx['bukti_bayar']) || ($trx['metode_bayar'] ?? 'Transfer') === 'Cash'));
         if (!$bisaDiverifikasi) {
             throw new Exception('Transaksi tidak dapat diverifikasi (status/bukti tidak memenuhi syarat).');
         }
@@ -319,8 +320,10 @@ require __DIR__ . '/../src/Views/layouts/header.php';
                             <td><small><?= format_tanggal($t['created_at']) ?></small></td>
                             <td><small><?= format_tanggal($t['batas_bayar_at']) ?></small></td>
                             <td align="center">
-                                <?php if (!empty($t['bukti_bayar'])): ?>
-                                    <a href="bukti.php?kode=<?= urlencode($t['kode_booking']) ?>" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">Lihat bukti</a>
+                                <?php if (($t['metode_bayar'] ?? 'Transfer') === 'Cash'): ?>
+                                    <span class="badge badge-warning">Tunai</span>
+                                <?php elseif (!empty($t['bukti_bayar'])): ?>
+                                    <button type="button" class="btn btn-ghost btn-sm" data-proof="bukti.php?kode=<?= urlencode($t['kode_booking']) ?>">Lihat bukti</button>
                                 <?php else: ?>
                                     <small style="color:var(--color-text-muted);">Belum ada</small>
                                 <?php endif; ?>
@@ -342,8 +345,9 @@ require __DIR__ . '/../src/Views/layouts/header.php';
 </div>
 
 <?php if ($detail): ?>
-    <?php $eligible = $detail['status_bayar'] === 'Waiting Verification'
-        || ($detail['status_bayar'] === 'Pending' && !empty($detail['bukti_bayar'])); ?>
+    <?php $metodeDetail = $detail['metode_bayar'] ?? 'Transfer';
+          $eligible = $detail['status_bayar'] === 'Waiting Verification'
+        || ($detail['status_bayar'] === 'Pending' && (!empty($detail['bukti_bayar']) || $metodeDetail === 'Cash')); ?>
     <div class="card card-elevated" style="margin-top:24px;">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
             <div>
@@ -352,9 +356,15 @@ require __DIR__ . '/../src/Views/layouts/header.php';
                     Kode Booking: <code><?= e($detail['kode_booking']) ?></code>
                 </div>
             </div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                <?php if ($detail['status_bayar'] === 'Paid'): ?>
+                    <a href="etiket.php?kode=<?= urlencode($detail['kode_booking']) ?>" class="btn btn-primary btn-sm">E-Ticket Peserta</a>
+                <?php endif; ?>
                 <span class="badge <?= status_class($detail['status_bayar']) ?>">
                     <?= e(label_status($detail['status_bayar'])) ?>
+                </span>
+                <span class="badge <?= ($detail['metode_bayar'] ?? 'Transfer') === 'Cash' ? 'badge-warning' : 'badge-info' ?>">
+                    <?= ($detail['metode_bayar'] ?? 'Transfer') === 'Cash' ? 'Tunai' : 'Transfer' ?>
                 </span>
                 <?php if ($eligible): ?>
                     <button type="submit" form="formSetujui" class="btn btn-outline btn-sm">Setujui (Paid)</button>
@@ -441,6 +451,12 @@ require __DIR__ . '/../src/Views/layouts/header.php';
             </table>
         </div>
 
+        <?php if (!empty($detail['bukti_bayar'])): ?>
+            <div style="margin:8px 0 16px 0;">
+                <button type="button" class="btn btn-outline btn-sm" data-proof="bukti.php?kode=<?= urlencode($detail['kode_booking']) ?>">Lihat Bukti Pembayaran</button>
+            </div>
+        <?php endif; ?>
+
         <?php if ($eligible): ?>
             <form id="formSetujui" method="POST" action="verifikasi_pembayaran.php" style="display:inline;" onsubmit="return confirm('Setujui transaksi <?= e($detail['kode_booking']) ?> menjadi PAID? E-ticket akan diterbitkan dan kursi ditetapkan Sold.');">
                 <?= csrf_field() ?>
@@ -460,5 +476,13 @@ require __DIR__ . '/../src/Views/layouts/header.php';
         <?php endif; ?>
     </div>
 <?php endif; ?>
+
+
+<div class="modal-overlay" id="proofModal" hidden>
+    <div class="modal-card proof-card" role="dialog" aria-modal="true" aria-label="Bukti pembayaran">
+        <button type="button" class="modal-close" data-modal-close aria-label="Tutup">&times;</button>
+        <img id="proofImage" src="" alt="Bukti pembayaran">
+    </div>
+</div>
 
 <?php require __DIR__ . '/../src/Views/layouts/footer.php'; ?>

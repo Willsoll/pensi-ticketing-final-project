@@ -23,6 +23,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // ---------- UPLOAD BUKTI ----------
     if ($aksi === 'upload_bukti') {
+        if (($trx['metode_bayar'] ?? 'Transfer') === 'Cash') {
+            set_flash('ERROR', 'Pesanan tunai tidak memerlukan unggah bukti transfer.');
+            header('Location: checkout.php?kode=' . urlencode($kode));
+            exit;
+        }
         if ($kode === '') {
             set_flash('ERROR', 'Kode transaksi tidak ditemukan.');
             header('Location: dashboard_peserta.php');
@@ -67,6 +72,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $namaList   = $_POST['nama_peserta'] ?? [];
     $nikList    = $_POST['nik_peserta'] ?? [];
     $kodeVoucher = trim((string)($_POST['kode_voucher'] ?? ''));
+    $metodeBayar = (string)($_POST['metode_bayar'] ?? 'Transfer');
+    if (!in_array($metodeBayar, ['Transfer', 'Cash'], true)) $metodeBayar = 'Transfer';
 
     if ($id_event <= 0 || $id_tier <= 0 || $qty < 1 || $qty > 5) {
         set_flash('ERROR', 'Data pesanan tidak valid.');
@@ -184,9 +191,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $batasBayar  = date('Y-m-d H:i:s', strtotime('+15 minutes'));
 
         $stmt = $pdo->prepare("INSERT INTO transaksi
-            (kode_booking,id_user,id_event,id_voucher,subtotal,diskon,biaya_layanan,total_bayar,bukti_bayar,batas_bayar_at,status_bayar,created_at)
-            VALUES (?,?,?,?,?,?,?,?,NULL,?,'Pending',NOW())");
-        $stmt->execute([$kodeBooking, $id_user, $id_event, $idVoucher, $subtotal, $diskon, $biayaLayanan, $total, $batasBayar]);
+            (kode_booking,id_user,id_event,id_voucher,subtotal,diskon,biaya_layanan,total_bayar,metode_bayar,bukti_bayar,batas_bayar_at,status_bayar,created_at)
+            VALUES (?,?,?,?,?,?,?,?,?,NULL,?,'Pending',NOW())");
+        $stmt->execute([$kodeBooking, $id_user, $id_event, $idVoucher, $subtotal, $diskon, $biayaLayanan, $total, $metodeBayar, $batasBayar]);
         $idTransaksi = (int)$pdo->lastInsertId();
 
         $idKursiCsv = implode(',', array_column($idKursiChosen, 'id_kursi'));
@@ -303,7 +310,7 @@ require __DIR__ . '/../src/Views/layouts/header.php';
 <div class="alert alert-info" role="status" style="margin:16px 0;">
     Bukti bayar Anda sudah diunggah dan menunggu verifikasi oleh keuangan.
     <?php if (!empty($trx['bukti_bayar'])): ?>
-    <a href="bukti.php?kode=<?= e($kode) ?>" class="btn btn-outline btn-sm">Lihat Bukti</a>
+    <button type="button" class="btn btn-outline btn-sm" data-proof="bukti.php?kode=<?= e($kode) ?>">Lihat Bukti</button>
     <?php endif; ?>
 </div>
 <?php elseif ($trx['status_bayar'] === 'Paid'): ?>
@@ -333,6 +340,7 @@ require __DIR__ . '/../src/Views/layouts/header.php';
             <?php endforeach; ?>
             <tr style="border:none;"><td style="border:none;">Subtotal</td><td style="border:none;text-align:right;"><strong><?= format_rupiah((int)$trx['subtotal']) ?></strong></td></tr>
             <tr style="border:none;"><td style="border:none;">Diskon</td><td style="border:none;text-align:right;color:var(--color-success);">- <?= format_rupiah((int)$trx['diskon']) ?></td></tr>
+            <tr style="border:none;"><td style="border:none;">Metode pembayaran</td><td style="border:none;text-align:right;"><strong><?= e($trx['metode_bayar'] === 'Cash' ? 'Tunai (Cash)' : 'Transfer Bank') ?></strong></td></tr>
             <tr style="border:none;"><td style="border:none;">Biaya layanan</td><td style="border:none;text-align:right;"><?= format_rupiah((int)$trx['biaya_layanan']) ?></td></tr>
             <tr style="border:none;"><td style="border:none;"><strong>Total</strong></td><td style="border:none;text-align:right;"><strong style="font-size:1.1rem;"><?= format_rupiah((int)$trx['total_bayar']) ?></strong></td></tr>
         </table>
@@ -360,10 +368,44 @@ require __DIR__ . '/../src/Views/layouts/header.php';
 
 <?php if ($trx['status_bayar'] === 'Pending'): ?>
 <div class="card card-elevated" style="margin-top:16px;">
+    <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+        <h3 style="margin:0;">Instruksi Pembayaran</h3>
+        <span class="badge <?= $trx['metode_bayar'] === 'Cash' ? 'badge-warning' : 'badge-info' ?>">
+            <?= $trx['metode_bayar'] === 'Cash' ? 'Tunai (Cash)' : 'Transfer Bank' ?>
+        </span>
+    </div>
     <div style="padding:16px;">
-        <h3 style="margin:0 0 8px 0;">Upload Bukti Transfer</h3>
-        <p style="color:var(--color-text-muted);font-size:0.875rem;margin-bottom:12px;">
-            Transfer sesuai total ke rekening panitia. Cantumkan kode <?= e($kode) ?> sebagai keterangan.
+    <?php if ($trx['metode_bayar'] === 'Cash'): ?>
+        <p style="margin:0 0 10px 0;color:var(--color-text-secondary);">
+            Silakan bayar <strong style="color:var(--color-text-primary);"><?= format_rupiah((int)$trx['total_bayar']) ?></strong>
+            secara tunai ke sekretariat panitia. Tunjukkan kode booking
+            <code><?= e($kode) ?></code> kepada petugas keuangan.
+        </p>
+        <div class="alert alert-info" style="margin:0;">
+            Status akan diubah menjadi <strong>Lunas</strong> oleh bagian keuangan setelah pembayaran tunai diterima.
+            E-Ticket dapat diunduh dari Dashboard setelahnya.
+        </div>
+    <?php else: ?>
+        <p style="margin:0 0 10px 0;color:var(--color-text-secondary);">
+            Transfer sebesar <strong style="color:var(--color-text-primary);"><?= format_rupiah((int)$trx['total_bayar']) ?></strong>
+            ke rekening berikut, lalu unggah bukti transfer.
+        </p>
+        <div class="pay-bank">
+            <div>
+                <small>Bank</small>
+                <strong>BCA</strong>
+            </div>
+            <div>
+                <small>Nomor Rekening</small>
+                <strong style="font-family:var(--font-mono,monospace);letter-spacing:.06em;">7615553221</strong>
+            </div>
+            <div>
+                <small>Atas Nama</small>
+                <strong>Panitia PENSI</strong>
+            </div>
+        </div>
+        <p style="color:var(--color-text-muted);font-size:0.875rem;margin:12px 0;">
+            Cantumkan kode <code><?= e($kode) ?></code> pada berita/keterangan transfer.
         </p>
         <form method="POST" action="checkout.php?kode=<?= e($kode) ?>" enctype="multipart/form-data">
             <?= csrf_field() ?>
@@ -382,9 +424,17 @@ require __DIR__ . '/../src/Views/layouts/header.php';
             </div>
             <button type="submit" class="btn btn-primary">Unggah Bukti</button>
         </form>
+    <?php endif; ?>
     </div>
 </div>
 <?php endif; ?>
+
+<div class="modal-overlay" id="proofModal" hidden>
+    <div class="modal-card proof-card" role="dialog" aria-modal="true" aria-label="Bukti pembayaran">
+        <button type="button" class="modal-close" data-modal-close aria-label="Tutup">&times;</button>
+        <img id="proofImage" src="" alt="Bukti pembayaran">
+    </div>
+</div>
 
 <script>
 (function(){

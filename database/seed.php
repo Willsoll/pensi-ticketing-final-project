@@ -159,8 +159,8 @@ $trxSeeds = [
     ['dewi@student.id',  $EVID[0], 'Reguler',    2, 'Paid',                 'HEMAT10',   9, 1],
     ['bagas@student.id', $EVID[0], 'VIP',        1, 'Paid',                 null,        8, 0],
     ['citra@student.id', $EVID[0], 'Early Bird', 3, 'Waiting Verification', 'EARLYBIRD', 2, 0],
-    ['dimas@alumni.id',  $EVID[0], 'Reguler',    1, 'Pending',              null,        0, 0],
-    ['eka@guest.id',     $EVID[1], 'VIP',        1, 'Paid',                 null,        7, 1],
+    ['dimas@alumni.id',  $EVID[0], 'Reguler',    1, 'Pending',              null,        0, 0, 'Cash'],
+    ['eka@guest.id',     $EVID[1], 'VIP',        1, 'Paid',                 null,        7, 1, 'Cash'],
     ['fajar@student.id', $EVID[1], 'Reguler',    2, 'Paid',                 'POTONG25K', 5, 0],
     ['gita@student.id',  $EVID[1], 'Early Bird', 1, 'Rejected',             null,        6, 0],
     ['dewi@student.id',  $EVID[2], 'Reguler',    4, 'Paid',                 null,        4, 0],
@@ -172,8 +172,8 @@ $trxSeeds = [
 ];
 
 $insTrx = $pdo->prepare('INSERT INTO transaksi
-    (kode_booking,id_user,id_event,id_voucher,subtotal,diskon,biaya_layanan,total_bayar,bukti_bayar,batas_bayar_at,status_bayar,catatan_penolakan,created_at)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)');
+    (kode_booking,id_user,id_event,id_voucher,subtotal,diskon,biaya_layanan,total_bayar,metode_bayar,bukti_bayar,batas_bayar_at,status_bayar,catatan_penolakan,created_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
 $insPeserta = $pdo->prepare('INSERT INTO transaksi_peserta (id_transaksi,id_tier,nama_peserta,nik_peserta,id_kursi)
     VALUES (?,?,?,?,?)');
 $insDetail = $pdo->prepare('INSERT INTO transaksi_detail (id_transaksi,id_tier,jumlah,harga_satuan,subtotal,id_kursi_list)
@@ -185,6 +185,7 @@ $lockedByTier = []; $soldByTier = []; $voucherUsed = [];
 
 foreach ($trxSeeds as $s) {
     [$email, $evId, $tierName, $qty, $status, $vCode, $daysAgo, $checkins] = $s;
+    $metode = $s[8] ?? 'Transfer';
     $t = $tier["$evId|$tierName"];
     $idTier = $t['id'];
     $subtotal = $t['harga'] * $qty;
@@ -203,12 +204,12 @@ foreach ($trxSeeds as $s) {
     $total = $subtotal - $diskon + $biaya;
     $created = date('Y-m-d H:i:s', strtotime("-$daysAgo days"));
     $batas = date('Y-m-d H:i:s', strtotime("-$daysAgo days +15 minutes"));
-    $bukti = in_array($status, ['Waiting Verification', 'Paid', 'Rejected'], true)
-        ? 'uploads/bukti/contoh_bukti.png' : null;
+    $bukti = ($metode === 'Cash') ? null : (in_array($status, ['Waiting Verification', 'Paid', 'Rejected'], true)
+        ? 'uploads/bukti/contoh_bukti.png' : null);
     $catatan = $status === 'Rejected' ? 'Bukti transfer tidak valid / nominal tidak sesuai.' : null;
 
     $insTrx->execute([kode_booking(), $userId[$email], $evId, $idVoucher, $subtotal, $diskon, $biaya, $total,
-                      $bukti, $batas, $status, $catatan, $created]);
+                      $metode, $bukti, $batas, $status, $catatan, $created]);
     $idTrx = (int)$pdo->lastInsertId();
 
     $seats = [];

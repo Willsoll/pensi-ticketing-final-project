@@ -276,3 +276,34 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 });
+
+/* ===== v5: proof-of-payment modal ===== */
+(function () {
+    var overlay = document.getElementById('proofModal');
+    var image = document.getElementById('proofImage');
+    if (!overlay || !image) return;
+
+    function closeModal() {
+        overlay.hidden = true;
+        image.removeAttribute('src');
+        document.body.style.overflow = '';
+    }
+
+    document.addEventListener('click', function (e) {
+        var trigger = e.target.closest('[data-proof]');
+        if (trigger) {
+            e.preventDefault();
+            image.src = trigger.getAttribute('data-proof');
+            overlay.hidden = false;
+            document.body.style.overflow = 'hidden';
+            return;
+        }
+        if (e.target.closest('[data-modal-close]') || e.target === overlay) {
+            closeModal();
+        }
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && !overlay.hidden) closeModal();
+    });
+})();

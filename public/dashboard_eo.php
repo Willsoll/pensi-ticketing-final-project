@@ -243,10 +243,10 @@ require __DIR__ . '/../src/Views/layouts/header.php';
             $pct = $r['kuota_total'] > 0 ? (int)round($r['sold'] / $r['kuota_total'] * 100) : 0;
             ?>
             <div class="occupancy-row">
-                <span style="min-width:160px;display:inline-block;"><?= e($r['judul_event']) ?> &middot; <?= e($r['nama_tier']) ?></span>
-                <span style="min-width:120px;display:inline-block;"><?= (int)$r['sold'] ?> / <?= (int)$r['kuota_total'] ?></span>
+                <span class="occ-name"><?= e($r['judul_event']) ?> &middot; <?= e($r['nama_tier']) ?></span>
+                <span class="occ-count"><?= (int)$r['sold'] ?> / <?= (int)$r['kuota_total'] ?></span>
                 <div class="bar"><i style="width: <?= $pct ?>%"></i></div>
-                <span style="min-width:28px;"><?= $pct ?>%</span>
+                <span class="occ-pct"><?= $pct ?>%</span>
             </div>
         <?php endforeach; ?>
         <?php if (!$rowsTier): ?>

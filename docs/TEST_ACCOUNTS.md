@@ -57,3 +57,11 @@ Re-run the seed to restore all accounts and demo data:
 mysql -u root < C:/xampp/htdocs/database/schema.sql
 C:/xampp/php/php.exe C:/xampp/htdocs/database/seed.php
 ```
+
+
+## Payment methods (v6)
+
+- **Transfer Bank** — BCA **7615553221**, a.n. **Panitia PENSI**. Upload proof (JPG/PNG/WEBP ≤ 2 MB); finance verifies.
+- **Tunai (Cash)** — pay at the secretariat, show the booking code; finance marks it Paid manually.
+
+E-Ticket is issued only after finance sets the transaction to **Paid**; it can then be downloaded as JPG or PDF from the Dashboard or the checkout success panel.

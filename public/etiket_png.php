@@ -109,22 +109,26 @@ if (!function_exists('pensi_draw_eticket_image')) {
      */
     function pensi_draw_eticket_image(array $row): GdImage
     {
-        $w = 800;
-        $h = 1130;
+        // Tiket landscape bergaya boarding pass / tiket kereta:
+        // panel barcode vertikal di kiri, data peserta di kanan.
+        $w = 1100;
+        $h = 620;
         $im = imagecreatetruecolor($w, $h);
 
         $white  = imagecolorallocate($im, 255, 255, 255);
         $dark   = imagecolorallocate($im, 17, 24, 39);
         $indigo = imagecolorallocate($im, 30, 27, 75);
-        $gray   = imagecolorallocate($im, 107, 114, 128);
-        $lgray  = imagecolorallocate($im, 229, 231, 235);
+        $purple = imagecolorallocate($im, 109, 40, 217);
+        $orange = imagecolorallocate($im, 249, 115, 22);
+        $gray   = imagecolorallocate($im, 100, 116, 139);
+        $lgray  = imagecolorallocate($im, 226, 232, 240);
+        $green  = imagecolorallocate($im, 5, 150, 105);
 
         imagefilledrectangle($im, 0, 0, $w - 1, $h - 1, $white);
-        imagesetthickness($im, 12);
-        imagerectangle($im, 0, 0, $w - 1, $h - 1, $dark);
+        imagesetthickness($im, 4);
+        imagerectangle($im, 2, 2, $w - 3, $h - 3, $dark);
         imagesetthickness($im, 1);
 
-        // Cari font yang tersedia (portabel: Windows, Linux hosting, atau folder assets/fonts).
         $fontPairs = [
             [__DIR__ . '/assets/fonts/arial.ttf', __DIR__ . '/assets/fonts/arialbd.ttf'],
             ['C:/Windows/Fonts/arial.ttf', 'C:/Windows/Fonts/arialbd.ttf'],
@@ -153,93 +157,92 @@ if (!function_exists('pensi_draw_eticket_image')) {
             }
             return strlen($str) * imagefontwidth(5);
         };
-        $center = function (string $str, int $y, $color, int $size = 13, bool $bold = false) use ($w, $text, $width) {
-            $x = (int)(($w - $width($str, $size, $bold)) / 2);
-            $text($x, $y, $str, $color, $size, $bold);
-        };
 
-        // ---------- Header ----------
-        $y = 78;
-        $center('PENSI EVENTPRO', $y, $indigo, 36, true);
-        $y += 48;
-        $center($row['judul_event'] ?? '-', $y, $dark, 22, true);
-        $y += 32;
-        $center(
-            (($row['tgl_mulai'] ?? '') ? date('d M Y, H:i', strtotime($row['tgl_mulai'])) : '-')
-            . '  ·  ' . ($row['lokasi'] ?? '-'),
-            $y, $gray, 14);
-        $y += 40;
-
-        // Garis pemisah
-        $lineW = 320;
-        $lx = (int)(($w - $lineW) / 2);
-        for ($dx = $lx; $dx < $lx + $lineW; $dx += 14) {
-            imagefilledrectangle($im, $dx, $y, $dx + 8, $y + 2, $lgray);
-        }
-        $y += 44;
-
-        // ---------- Blok data tiket ----------
-        $blockX = 56;
-        $blockW = $w - 112;
-        $fields = [
-            ['NAMA', $row['nama_peserta'] ?? '-'],
-            ['NIK', $row['nik_peserta'] ?? '-'],
-            ['TIER', $row['nama_tier'] ?? '-'],
-            ['KURSI', !empty($row['nomor_kursi']) ? 'Kursi ' . $row['nomor_kursi'] : 'Free Standing'],
-            ['KODE TIKET', $row['kode_tiket'] ?? '-'],
-        ];
-        $rowH = 56;
-        imagefilledrectangle($im, $blockX, $y, $blockX + $blockW, $y + count($fields) * $rowH, $white);
-        imagerectangle($im, $blockX, $y, $blockX + $blockW, $y + count($fields) * $rowH, $lgray);
-        imagefilledrectangle($im, $blockX, $y, $blockX + 7, $y + count($fields) * $rowH, $indigo);
-
-        $ty = $y + 32;
-        foreach ($fields as $f) {
-            $text($blockX + 30, $ty, $f[0], $gray, 12, true);
-            $ty += 22;
-            $text($blockX + 30, $ty, $f[1], $dark, 17, true);
-            $ty += $rowH - 22;
-        }
-        $y += count($fields) * $rowH + 46;
-
-        // ---------- Barcode ----------
-        $center('BARCODE UNTUK GATE ENTRY', $y, $dark, 13, true);
-        $y += 26;
+        // ---------- Panel kiri: barcode vertikal ----------
+        imagefilledrectangle($im, 0, 0, 170, $h - 1, $indigo);
 
         $hex = hash_hmac('sha256', ($row['kode_tiket'] ?? '') . '|' . ($row['nik_peserta'] ?? ''), BARCODE_HMAC_SECRET);
-        $barCount = 56;
-        $barW = [];
-        $totalW = 0;
-        for ($i = 0; $i < $barCount; $i++) {
-            $wd = (hexdec($hex[$i]) % 3) + 1;
-            $barW[] = $wd;
-            $totalW += $wd + 1;
-        }
-        $barH = 110;
-        $bx = (int)(($w - $totalW) / 2);
-        $by = $y;
-        foreach ($barW as $i => $wd) {
+        $by = 46;
+        $barBottom = $h - 130;
+        for ($i = 0; $i < 60 && $by < $barBottom; $i++) {
+            $thickness = (hexdec($hex[$i]) % 3) + 1;
             if ($i % 2 === 0) {
-                imagefilledrectangle($im, $bx, $by, $bx + $wd - 1, $by + $barH - 1, $dark);
+                // Bar putih horizontal: hasil rotasi 90° dari barcode biasa.
+                imagefilledrectangle($im, 30, $by, 140, $by + $thickness - 1, $white);
             }
-            $bx += $wd + 1;
+            $by += $thickness + 2;
         }
-        $y += $barH + 30;
-        $center($row['kode_tiket'] ?? '-', $y, $dark, 18, true);
-        $y += 40;
 
-        // ---------- Footer ----------
-        $center('Tunjukkan e-ticket ini di gate bersama KTP asli.', $y, $gray, 12);
-        $y += 30;
-        $terms = [
-            'E-ticket bersifat personal (identity binding) dan tidak dapat dipindahtangankan.',
-            'Berlaku untuk 1 kali masuk; scan kedua ditolak (anti-passback).',
-            'Sah hanya jika status pembayaran LUNAS.',
-        ];
-        foreach ($terms as $t) {
-            $center($t, $y, $gray, 11);
-            $y += 20;
+        // Teks vertikal di panel
+        if ($hasTtf) {
+            imagettftext($im, 11, 90, 24, $h - 46, $white, $fontBold, 'GATE SCAN');
+            imagettftext($im, 11, 90, 152, $h - 46, $white, $fontBold, 'E-TICKET');
+        } else {
+            imagestring($im, 3, 30, $h - 60, 'GATE SCAN', $white);
         }
+
+        // Garis perforasi + lubang tiket
+        for ($py = 8; $py < $h - 8; $py += 18) {
+            imagefilledrectangle($im, 176, $py, 178, $py + 8, $lgray);
+        }
+        imagefilledellipse($im, 177, 0, 26, 26, $white);
+        imagefilledellipse($im, 177, $h - 1, 26, 26, $white);
+        imageellipse($im, 177, 0, 26, 26, $dark);
+        imageellipse($im, 177, $h - 1, 26, 26, $dark);
+
+        // ---------- Area kanan: data tiket ----------
+        $x0 = 215;
+        $xRight = $w - 52;
+        $maxW = $xRight - $x0;
+
+        $text($x0, 62, 'PENSI EVENTPRO', $indigo, 20, true);
+        $et = 'E-TICKET';
+        $text($xRight - $width($et, 15, true), 62, $et, $orange, 15, true);
+
+        $judul = (string)($row['judul_event'] ?? '-');
+        if ($width($judul, 26, true) > $maxW) {
+            $judul = mb_substr($judul, 0, 46) . '...';
+        }
+        $text($x0, 112, $judul, $dark, 26, true);
+
+        $when = !empty($row['tgl_mulai']) ? date('d M Y, H:i', strtotime((string)$row['tgl_mulai'])) : '-';
+        $text($x0, 146, $when . '  ·  ' . ($row['lokasi'] ?? '-'), $gray, 14);
+
+        // Badge LUNAS
+        $badgeX = $xRight - 118;
+        imagefilledrectangle($im, $badgeX, 76, $xRight, 106, $green);
+        $text($badgeX + 22, 97, 'LUNAS', $white, 13, true);
+
+        // Garis putus-putus
+        for ($dx = $x0; $dx < $xRight; $dx += 16) {
+            imagefilledrectangle($im, $dx, 172, $dx + 9, 174, $lgray);
+        }
+
+        // Dua kolom field
+        $colB = 650;
+        $text($x0, 212, 'NAMA PESERTA', $gray, 10, true);
+        $text($x0, 240, (string)($row['nama_peserta'] ?? '-'), $dark, 21, true);
+
+        $text($colB, 212, 'NIK', $gray, 10, true);
+        $text($colB, 240, (string)($row['nik_peserta'] ?? '-'), $dark, 19, true);
+
+        $text($x0, 296, 'TIER', $gray, 10, true);
+        $text($x0, 324, (string)($row['nama_tier'] ?? '-'), $dark, 19, true);
+
+        $text($colB, 296, 'KURSI', $gray, 10, true);
+        $text($colB, 324, !empty($row['nomor_kursi']) ? (string)$row['nomor_kursi'] : 'Free Standing', $dark, 19, true);
+
+        $text($x0, 380, 'KODE E-TICKET UNIK', $gray, 10, true);
+        $text($x0, 410, (string)($row['kode_tiket'] ?? '-'), $purple, 20, true);
+
+        // Catatan
+        $text($x0, 470, 'Tunjukkan e-ticket ini bersama KTP asli di gate masuk.', $gray, 12);
+        $text($x0, 494, 'Bersifat personal (identity binding) · hanya berlaku 1x masuk · anti-passback aktif.', $gray, 11);
+
+        // Band bawah
+        imagefilledrectangle($im, 172, $h - 46, $w - 3, $h - 3, $orange);
+        $band = 'PENSI EVENTPRO  ·  E-TICKET  ·  ' . ($row['kode_tiket'] ?? '');
+        $text($x0, $h - 16, $band, $white, 12, true);
 
         return $im;
     }

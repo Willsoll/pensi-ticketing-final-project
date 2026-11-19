@@ -55,10 +55,10 @@ if (!function_exists('pensi_build_eticket_pdf')) {
             return false;
         }
 
-        $w  = 800;                      // lebar gambar tiket (px)
-        $h  = 1130;                     // tinggi gambar tiket (px)
-        $pw = 595;                      // lebar A4 (pt)
-        $ph = 842;                      // tinggi A4 (pt)
+        $w  = 1100;                     // lebar gambar tiket (px)
+        $h  = 620;                      // tinggi gambar tiket (px)
+        $pw = 842;                      // lebar A4 landscape (pt)
+        $ph = 595;                      // tinggi A4 landscape (pt)
         $margin = 36;                   // margin minimum (pt)
 
         // Skala agar pas di A4 dengan margin, ditempatkan di tengah halaman.
@@ -73,8 +73,8 @@ if (!function_exists('pensi_build_eticket_pdf')) {
 
         $objs = [];
         $objs[] = "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n";
-        $objs[] = "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 595 842] >>\nendobj\n";
-        $objs[] = "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>\nendobj\n";
+        $objs[] = "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 842 595] >>\nendobj\n";
+        $objs[] = "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 842 595] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>\nendobj\n";
         $objs[] = sprintf(
             "4 0 obj\n<< /Type /XObject /Subtype /Image /Name /Im0 /Width %d /Height %d /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length %d >>\nstream\n",
             $w, $h, strlen($jpeg)

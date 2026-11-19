@@ -134,3 +134,82 @@ code, kbd, samp {
     border-color: rgba(255, 255, 255, .26) !important;
     color: #E2E8F0 !important;
 }
+
+/* ===== PAYMENT METHOD CHOOSER ===== */
+.pay-methods { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pay-option {
+    display: flex; align-items: flex-start; gap: 11px; padding: 14px;
+    border: 1.5px solid var(--color-border, #CBD5E1); border-radius: 12px;
+    background: var(--color-bg-card, #FFFFFF); cursor: pointer;
+    transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.pay-option:hover { border-color: var(--color-border-strong, #94A3B8); }
+.pay-option:has(input:checked) {
+    border-color: var(--color-accent, #6D28D9);
+    box-shadow: 0 0 0 3px rgba(109, 40, 217, .14);
+    background: color-mix(in srgb, var(--color-accent, #6D28D9) 5%, var(--color-bg-card, #FFF));
+}
+.pay-option input { margin-top: 3px; accent-color: var(--color-accent, #6D28D9); }
+.pay-option .pay-icon { width: 26px; height: 26px; flex: none; color: var(--color-accent, #6D28D9); }
+.pay-option .pay-icon svg { width: 24px; height: 24px; }
+.pay-option strong { display: block; font-size: 13.5px; color: var(--color-text-primary); }
+.pay-option small { display: block; font-size: 11.5px; color: var(--color-text-muted); margin-top: 2px; }
+@media (max-width: 640px) { .pay-methods { grid-template-columns: 1fr; } }
+
+.pay-bank {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+    padding: 14px; border: 1px solid var(--color-border, #CBD5E1);
+    border-radius: 12px; background: var(--color-bg-muted);
+}
+.pay-bank small { display: block; font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--color-text-muted); }
+.pay-bank strong { display: block; font-size: 14px; color: var(--color-text-primary); margin-top: 3px; }
+@media (max-width: 640px) { .pay-bank { grid-template-columns: 1fr; } }
+
+/* ===== PROOF MODAL ===== */
+.modal-overlay {
+    position: fixed; inset: 0; z-index: 300; padding: 24px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(8, 10, 22, .68);
+    -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px);
+}
+.modal-overlay[hidden] { display: none !important; }
+.modal-card {
+    position: relative; width: 100%; max-width: 780px; max-height: 88vh;
+    background: var(--color-bg-card, #FFFFFF);
+    border: 1.5px solid var(--color-border, #CBD5E1);
+    border-radius: 18px; padding: 16px;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, .45);
+    overflow: auto;
+}
+.proof-card img { display: block; width: 100%; height: auto; border-radius: 10px; }
+.modal-close {
+    position: absolute; top: 8px; right: 8px; z-index: 2;
+    width: 36px; height: 36px; border-radius: 50%;
+    border: 1px solid var(--color-border, #CBD5E1);
+    background: var(--color-bg-card, #FFFFFF);
+    color: var(--color-text-primary); font-size: 22px; line-height: 1;
+    cursor: pointer; display: grid; place-items: center;
+}
+.modal-close:hover { background: var(--color-error, #EF4444); color: #fff; border-color: var(--color-error, #EF4444); }
+
+/* ===== OCCUPANCY ROWS: parallel bars ===== */
+.occupancy-row {
+    display: grid;
+    grid-template-columns: minmax(200px, 1.7fr) 86px minmax(120px, 1fr) 46px;
+    align-items: center; gap: 12px; margin-bottom: 10px;
+}
+.occupancy-row .bar { width: 100%; margin: 0; }
+.occ-name { font-size: 12.5px; color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.occ-count { font-size: 12.5px; color: var(--color-text-secondary); font-variant-numeric: tabular-nums; }
+.occ-pct { font-size: 12.5px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+@media (max-width: 700px) {
+    .occupancy-row { grid-template-columns: 1fr 78px 44px; }
+    .occupancy-row .occ-name { grid-column: 1 / -1; white-space: normal; }
+}
+
+/* ===== FOOTER ALWAYS AT THE BOTTOM ===== */
+html, body { min-height: 100%; }
+body { display: flex; flex-direction: column; min-height: 100vh; }
+.app-shell { flex: 1 0 auto; }
+main { flex: 1 0 auto; }
+.site-footer { margin-top: auto !important; flex-shrink: 0; }

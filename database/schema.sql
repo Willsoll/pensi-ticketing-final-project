@@ -113,6 +113,7 @@ CREATE TABLE transaksi (
     diskon            INT NOT NULL DEFAULT 0,
     biaya_layanan     INT NOT NULL DEFAULT 0,
     total_bayar       INT NOT NULL DEFAULT 0,
+    metode_bayar      ENUM('Transfer','Cash') NOT NULL DEFAULT 'Transfer',
     bukti_bayar       VARCHAR(255) DEFAULT NULL,
     batas_bayar_at    DATETIME NOT NULL,
     status_bayar      ENUM('Pending','Waiting Verification','Paid','Expired','Rejected')
