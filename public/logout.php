@@ -1,41 +1,26 @@
 <?php
 /**
- * logout.php - Keluar dari sesi (dilindungi CSRF token)
+ * logout.php - Keluar dari sesi
+ * Hancurkan sesi, hapus cookie, arahkan ke index.php dengan flash.
  */
 require_once __DIR__ . '/../src/Config/database.php';
 require_once __DIR__ . '/../src/Middleware/middleware.php';
 
-// Guest: langsung arahkan ke halaman login.
-if (!is_logged_in()) {
-    header('Location: login.php');
-    exit;
+$idUser = $_SESSION['id_user'] ?? null;
+if ($idUser) {
+    catat_audit_log($pdo, (int)$idUser, 'LOGOUT', 'users', 'Keluar dari sesi.');
 }
 
-$token = $_GET['csrf'] ?? $_POST['csrf_token'] ?? '';
-if (!verify_csrf_token(is_string($token) ? $token : '')) {
-    set_flash('ERROR', 'Permintaan logout tidak valid (CSRF token tidak cocok).');
-    header('Location: index.php');
-    exit;
-}
+// Siapkan flash sebelum membersihkan sesi agar pesan tetap tampil di halaman tujuan.
+set_flash('INFO', 'Anda telah keluar.');
+$flash = $_SESSION['flash'] ?? null;
 
-// Hapus data sesi & cookie sesi.
+// Hapus semua data sesi (termasuk status login), simpan flash untuk redirect.
 $_SESSION = [];
-if (ini_get('session.use_cookies')) {
-    $params = session_get_cookie_params();
-    setcookie(
-        session_name(),
-        '',
-        [
-            'expires'  => time() - 42000,
-            'path'     => $params['path'] ?: '/',
-            'domain'   => $params['domain'] ?? '',
-            'secure'   => (bool)($params['secure'] ?? false),
-            'httponly' => (bool)($params['httponly'] ?? true),
-            'samesite' => $params['samesite'] ?? 'Strict',
-        ]
-    );
+if ($flash) {
+    $_SESSION['flash'] = $flash;
 }
-session_destroy();
+session_write_close();
 
-header('Location: login.php?logout=1');
+header('Location: index.php');
 exit;

@@ -1,44 +1,33 @@
 <?php
 /**
- * error.php - Halaman error statis (tanpa dependensi database/middleware)
- * Dipanggil oleh ErrorDocument di .htaccess.
+ * error.php - Halaman kesalahan sederhana (menggunakan header/footer)
+ * Pesan diambil dari ?msg (disaring) atau pesan generik.
  */
-$code_raw = $_GET['code'] ?? 404;
-$code = is_numeric($code_raw) ? (int)$code_raw : 404;
-if (!in_array($code, [403, 404, 500], true)) {
-    $code = 404;
-}
-http_response_code($code);
+require_once __DIR__ . '/../src/Config/database.php';
+require_once __DIR__ . '/../src/Middleware/middleware.php';
 
-$messages = [
-    403 => ['Akses Ditolak', 'Anda tidak memiliki izin untuk mengakses halaman atau berkas ini.'],
-    404 => ['Halaman Tidak Ditemukan', 'Halaman atau berkas yang Anda cari tidak tersedia.'],
-    500 => ['Kesalahan Server', 'Terjadi kesalahan internal. Silakan coba beberapa saat lagi.'],
-];
-[$title, $message] = $messages[$code];
-?><!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $code ?> - <?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #FFFFFF; color: #111827; display: flex; min-height: 100vh; align-items: center; justify-content: center; padding: 24px; }
-        .box { max-width: 560px; width: 100%; border: 1px solid #E5E7EB; border-radius: 12px; padding: 32px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .code { font-size: 4rem; font-weight: 800; color: #4F46E5; line-height: 1; margin-bottom: 12px; }
-        h1 { font-size: 1.25rem; margin-bottom: 12px; }
-        p { color: #6B7280; margin-bottom: 24px; }
-        a { display: inline-block; background: #4F46E5; color: #FFFFFF; text-decoration: none; padding: 10px 18px; border-radius: 6px; font-weight: 600; }
-        a:hover { background: #4338CA; }
-    </style>
-</head>
-<body>
-    <div class="box">
-        <div class="code"><?= $code ?></div>
-        <h1><?= htmlspecialchars($title, ENT_QUOTES, 'UTF-8') ?></h1>
-        <p><?= htmlspecialchars($message, ENT_QUOTES, 'UTF-8') ?></p>
-        <a href="/index.php">Kembali ke Katalog Acara</a>
+$msg = trim($_GET['msg'] ?? '');
+if ($msg === '') {
+    $msg = 'Halaman yang Anda cari tidak tersedia.';
+}
+
+$pageTitle   = 'Kesalahan';
+$pageSubtitle = 'Maaf, ada yang tidak sesuai.';
+$activeNav   = '';
+require __DIR__ . '/../src/Views/layouts/header.php';
+?>
+
+<div style="max-width:560px;margin:0 auto;text-align:center;">
+    <div class="card card-elevated" style="margin-top:var(--space-10);">
+        <div class="card-body" style="padding:var(--space-10) var(--space-6);">
+            <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin:0 auto var(--space-4);display:block;">
+                <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
+            </svg>
+            <h2 style="font-size:var(--text-2xl);font-weight:700;margin:0 0 var(--space-2) 0;color:var(--color-text-primary);">Kesalahan</h2>
+            <p style="color:var(--color-text-muted);margin:0 0 var(--space-5) 0;"><?= e($msg) ?></p>
+            <a href="index.php" class="btn btn-primary">Kembali ke Katalog</a>
+        </div>
     </div>
-</body>
-</html>
+</div>
+
+<?php require __DIR__ . '/../src/Views/layouts/footer.php'; ?>

@@ -1,41 +1,44 @@
 <?php
 /**
- * etiket_pdf.php - Unduhan E-Ticket sebagai PDF (minimal, tanpa library eksternal)
+ * etiket_pdf.php — Unduhan E-Ticket sebagai PDF (minimal, tanpa library eksternal)
  *
- * Atribut autentikasi sama dengan etiket.php / etiket_png.php.
- * Menggunakan logika gambar GD dari etiket_png.php: gambar di-render ke JPEG
- * di memori (ob_start + imagejpeg), lalu disisipkan ke dalam satu halaman A4
- * (595x842 pt) sebagai XObject image dengan filter /DCTDecode.
+ * Autentikasi sama dengan etiket_png.php. Menggunakan pensi_draw_eticket_image()
+ * dari etiket_png.php: gambar di-render ke JPEG di memori (ob_start + imagejpeg),
+ * lalu disisipkan ke satu halaman A4 (595x842 pt) sebagai XObject /DCTDecode.
  *
- * Susunan objek PDF (minimal, valid):
+ * Susunan objek PDF:
  *   1 0 R : Catalog
  *   2 0 R : Pages
  *   3 0 R : Page (MediaBox A4)
  *   4 0 R : XObject Image (DCTDecode / DeviceRGB)
- *   5 0 R : Contents stream (q W 0 0 H X Y cm /Im0 Do Q)
+ *   5 0 R : Contents stream
  *
- * Respons: application/pdf, Content-Disposition attachment E-Ticket-KODE.pdf
- * Jika ekstensi GD tidak dimuat: HTTP 500 dengan pesan yang jelas.
+ * Respons: application/pdf, Content-Disposition attachment E-Ticket-<kode_tiket>.pdf
+ * Jika GD tidak dimuat: HTTP 500 dengan pesan yang jelas.
  */
 
-if (!defined('PENSI_ETIKET_PNG_DEFINE_ONLY')) {
-    define('PENSI_ETIKET_PNG_DEFINE_ONLY', true);
+declare(strict_types=1);
+
+if (!defined('PENSI_ETIKET_PNG_SKIP_OUTPUT')) {
+    define('PENSI_ETIKET_PNG_SKIP_OUTPUT', true);
 }
-require_once __DIR__ . '/etiket_png.php'; // autentikasi, validasi, dan pensi_draw_eticket_image()
+require_once __DIR__ . '/etiket_png.php'; // autentikasi, validasi, $row, pensi_draw_eticket_image()
 
 if (!function_exists('pensi_build_eticket_pdf')) {
     /**
      * Bangun bytes PDF satu halaman A4 dengan gambar e-ticket sebagai XObject.
      *
+     * @param array $row Data e-ticket (sama dengan pensi_draw_eticket_image)
      * @return string|false bytes PDF, atau false jika gagal.
      */
-    function pensi_build_eticket_pdf(array $pesanan, array $dt, int $n, string $kode_transaksi)
+    function pensi_build_eticket_pdf(array $row)
     {
         if (!extension_loaded('gd')) {
             return false;
         }
-        $im = pensi_draw_eticket_image($pesanan, $dt);
-        if ($im === false || $im === null) {
+
+        $im = pensi_draw_eticket_image($row);
+        if (!$im instanceof GdImage) {
             return false;
         }
 
@@ -44,6 +47,7 @@ if (!function_exists('pensi_build_eticket_pdf')) {
         $ok = imagejpeg($im);
         imagedestroy($im);
         if ($ok === false) {
+            ob_end_clean();
             return false;
         }
         $jpeg = ob_get_clean();
@@ -65,12 +69,12 @@ if (!function_exists('pensi_build_eticket_pdf')) {
         $dy = ($ph - $dh) / 2;
 
         $contents = sprintf("q %.2f 0 0 %.2f %.2f %.2f cm /Im0 Do Q\n", $dw, $dh, $dx, $dy);
-        $clen     = strlen($contents);
+        $clen = strlen($contents);
 
         $objs = [];
-        $objs[] = sprintf("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n");
-        $objs[] = sprintf("2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 595 842] >>\nendobj\n");
-        $objs[] = sprintf("3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>\nendobj\n");
+        $objs[] = "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n";
+        $objs[] = "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 595 842] >>\nendobj\n";
+        $objs[] = "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>\nendobj\n";
         $objs[] = sprintf(
             "4 0 obj\n<< /Type /XObject /Subtype /Image /Name /Im0 /Width %d /Height %d /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length %d >>\nstream\n",
             $w, $h, strlen($jpeg)
@@ -96,9 +100,12 @@ if (!function_exists('pensi_build_eticket_pdf')) {
     }
 }
 
-// ---------- Output PDF (diabaikan saat dimuat untuk membangun PDF dari CLI) ----------
-if (!defined('PENSI_ETIKET_PDF_DEFINE_ONLY') || !PENSI_ETIKET_PDF_DEFINE_ONLY) {
-    $pdf = pensi_build_eticket_pdf($pesanan, $dt, $n, $kode_transaksi);
+// ---------------------------------------------------------------------------
+// Output PDF (tidak mencakup layout halaman web)
+// ---------------------------------------------------------------------------
+if (!defined('PENSI_ETIKET_PDF_SKIP_OUTPUT') || !PENSI_ETIKET_PDF_SKIP_OUTPUT) {
+    $kodeTiket = $row['kode_tiket'] ?? 'eticket';
+    $pdf = pensi_build_eticket_pdf($row);
     if ($pdf === false) {
         http_response_code(500);
         header('Content-Type: text/html; charset=UTF-8');
@@ -106,7 +113,7 @@ if (!defined('PENSI_ETIKET_PDF_DEFINE_ONLY') || !PENSI_ETIKET_PDF_DEFINE_ONLY) {
         exit;
     }
     header('Content-Type: application/pdf');
-    header('Content-Disposition: attachment; filename="E-Ticket-' . $kode_transaksi . '.pdf"');
+    header('Content-Disposition: attachment; filename="E-Ticket-' . $kodeTiket . '.pdf"');
     header('Cache-Control: no-store, no-cache, must-revalidate');
     header('Pragma: no-cache');
     echo $pdf;

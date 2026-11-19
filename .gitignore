@@ -48,3 +48,8 @@ vendor/
 *.pem
 *.key
 *.crt
+
+# backup folders
+*_backup/
+public_v3_backup/
+src_v3_backup/

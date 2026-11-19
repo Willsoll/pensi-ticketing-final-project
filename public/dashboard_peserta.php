@@ -1,116 +1,137 @@
 <?php
 /**
- * dashboard_peserta.php - Dashboard Peserta: Daftar Pesanan & Cetak E-Ticket
- * Hanya role pembeli, milik user sendiri
+ * dashboard_peserta.php — Dashboard peserta (v4)
+ * Hanya role customer. Statistik + daftar transaksi.
  */
 require_once __DIR__ . '/../src/Config/database.php';
 require_once __DIR__ . '/../src/Middleware/middleware.php';
-
-require_role(['pembeli']);
+require_role(['customer']);
 release_expired_transactions($pdo);
 
-$user = current_user();
+$user    = current_user();
+$id_user = (int)$user['id_user'];
 
-// Ambil pesanan user
-$stmt = $pdo->prepare("
-    SELECT p.*, j.nama_jenis, j.tipe_tiket,
-           (SELECT COUNT(*) FROM detail_tiket_satuan WHERE id_pesan = p.id_pesan) as total_tiket,
-           (SELECT COUNT(*) FROM detail_tiket_satuan WHERE id_pesan = p.id_pesan AND status_checkin = 'Sudah Masuk') as sudah_masuk
-    FROM pemesanan p
-    JOIN jenis_tiket j ON p.id_jenis = j.id_jenis
-    WHERE p.id_user = ?
-    ORDER BY p.tgl_pesan DESC
-");
-$stmt->execute([(int)$user['id_user']]);
-$pesanan_list = $stmt->fetchAll();
+$stmt = $pdo->prepare('SELECT COUNT(*) FROM transaksi WHERE id_user = ?');
+$stmt->execute([$id_user]);
+$totalPesanan = (int)$stmt->fetchColumn();
 
-$page_title = 'Dashboard Peserta & E-Ticket - Pensi School';
-require_once __DIR__ . '/../src/Views/layouts/header.php';
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM e_tickets et
+                       JOIN transaksi t ON t.id_transaksi = et.id_transaksi
+                       WHERE t.id_user = ?");
+$stmt->execute([$id_user]);
+$tiketLunas = (int)$stmt->fetchColumn();
+
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM transaksi
+                       WHERE id_user = ? AND status_bayar = 'Pending'");
+$stmt->execute([$id_user]);
+$menungguBayar = (int)$stmt->fetchColumn();
+
+$stmt = $pdo->prepare("SELECT COALESCE(SUM(total_bayar),0) FROM transaksi
+                       WHERE id_user = ? AND status_bayar = 'Paid'");
+$stmt->execute([$id_user]);
+$totalBelanja = (int)$stmt->fetchColumn();
+
+$stmt = $pdo->prepare("SELECT t.*, e.judul_event FROM transaksi t
+                       JOIN events e ON e.id_event = t.id_event
+                       WHERE t.id_user = ? ORDER BY t.created_at DESC");
+$stmt->execute([$id_user]);
+$transaksi = $stmt->fetchAll();
+
+$pageTitle   = 'Dashboard Peserta';
+$pageSubtitle = 'Ringkasan pesanan dan e-ticket Anda';
+$activeNav   = 'dashboard_peserta.php';
+require __DIR__ . '/../src/Views/layouts/header.php';
 ?>
-
 <div class="breadcrumb">
-    <a href="index.php">Katalog</a> > Dashboard Peserta
+    <a href="index.php">Katalog</a> &rsaquo; Dashboard Peserta
 </div>
 
-<h2 style="color: #4F46E5; margin-bottom: 8px;">Dashboard Peserta</h2>
-<p style="margin-bottom: 16px; color: #6B7280;">
-    Halo, <strong><?= e($user['nama']) ?></strong> (<?= e(label_tipe_pengguna($user['tipe_pengguna'])) ?>). 
-    Berikut riwayat pesanan tiket Anda.
-</p>
-
-<?php if (empty($pesanan_list)): ?>
-    <div class="card" style="text-align: center; padding: 40px;">
-        <div style="font-size: 3rem; margin-bottom: 16px;">🎫</div>
-        <h3 style="color: #6B7280; margin-bottom: 8px;">Belum Ada Pesanan</h3>
-        <p style="color: #9CA3AF; margin-bottom: 20px;">Anda belum memesan tiket apapun.</p>
-        <a href="index.php" class="success" style="display: inline-block;">[ Pesan Tiket Sekarang ]</a>
+<div class="stat-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:24px;">
+    <div class="stat-box card">
+        <div style="color:var(--color-text-muted);font-size:0.875rem;">Total Pesanan</div>
+        <div style="font-size:1.5rem;font-weight:700;"><?= $totalPesanan ?></div>
     </div>
-<?php else: ?>
-    <div class="card">
-        <table>
+    <div class="stat-box card">
+        <div style="color:var(--color-text-muted);font-size:0.875rem;">Tiket Lunas</div>
+        <div style="font-size:1.5rem;font-weight:700;color:var(--color-success);"><?= $tiketLunas ?></div>
+    </div>
+    <div class="stat-box card">
+        <div style="color:var(--color-text-muted);font-size:0.875rem;">Menunggu Bayar</div>
+        <div style="font-size:1.5rem;font-weight:700;color:var(--color-warning);"><?= $menungguBayar ?></div>
+    </div>
+    <div class="stat-box card">
+        <div style="color:var(--color-text-muted);font-size:0.875rem;">Total Belanja</div>
+        <div style="font-size:1.5rem;font-weight:700;"><?= format_rupiah($totalBelanja) ?></div>
+    </div>
+</div>
+
+<div class="card card-elevated">
+    <div class="card-header"><h2 style="margin:0;">Pesanan Saya</h2></div>
+    <div style="padding:16px;">
+    <?php if (!$transaksi): ?>
+        <div class="empty-state">Belum ada pesanan.</div>
+    <?php else: ?>
+        <table class="table">
             <thead>
-                <tr>
-                    <th style="width: 15%;">Kode Transaksi</th>
-                    <th style="width: 20%;">Tanggal Pesan</th>
-                    <th style="width: 18%;">Jenis Tiket</th>
-                    <th style="width: 10%;">Jumlah</th>
-                    <th style="width: 12%; text-align: right;">Total Bayar</th>
-                    <th style="width: 12%;">Status</th>
-                    <th style="width: 13%;">Aksi</th>
-                </tr>
+            <tr>
+                <th>Kode</th>
+                <th>Event</th>
+                <th>Tanggal</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th style="width:140px;">Aksi</th>
+                <th style="width:110px;">Waktu</th>
+            </tr>
             </thead>
             <tbody>
-                <?php foreach ($pesanan_list as $ps): 
-                    $status_class = strtolower(str_replace(' ', '-', $ps['status_bayar']));
-                    $can_print = $ps['status_bayar'] === 'Lunas';
-                    $can_pay = in_array($ps['status_bayar'], ['Menunggu Bayar', 'Ditolak']);
-                ?>
-                    <tr>
-                        <td><code><strong><?= e($ps['kode_transaksi']) ?></strong></code></td>
-                        <td><?= e(date('d-m-Y H:i', strtotime($ps['tgl_pesan']))) ?></td>
-                        <td><?= e($ps['nama_jenis']) ?> <span class="badge badge-<?= $ps['tipe_tiket'] === 'Seated' ? 'available' : 'belum-masuk' ?>"><?= e($ps['tipe_tiket']) ?></span></td>
-                        <td align="center"><?= (int)$ps['jumlah'] ?></td>
-                        <td align="right"><strong><?= format_rupiah((int)$ps['total_harga']) ?></strong></td>
-                        <td align="center">
-                            <span class="badge badge-<?= $status_class ?>">
-                                <?= e($ps['status_bayar']) ?>
-                            </span>
-                            <?php if (!empty($ps['catatan_penolakan'])): ?>
-                                <br><small style="color: #E11D48;"><?= e($ps['catatan_penolakan']) ?></small>
-                            <?php endif; ?>
-                        </td>
-                        <td align="center" style="white-space: nowrap;">
-                            <?php if ($can_pay): ?>
-                                <a href="checkout.php?kode=<?= urlencode($ps['kode_transaksi']) ?>" class="button" style="font-size: 0.75rem; padding: 6px 10px;">
-                                    <?= $ps['status_bayar'] === 'Menunggu Bayar' ? 'Bayar Sekarang' : 'Upload Ulang' ?>
-                                </a>
-                            <?php endif; ?>
-                            <?php if ($can_print): ?>
-                                <a href="etiket.php?kode_transaksi=<?= urlencode($ps['kode_transaksi']) ?>" class="button success" style="font-size: 0.75rem; padding: 6px 10px; margin-left: 4px;">
-                                    Cetak E-Ticket
-                                </a>
-                            <?php endif; ?>
-                            <a href="detail_pesanan.php?kode=<?= urlencode($ps['kode_transaksi']) ?>" class="button secondary" style="font-size: 0.75rem; padding: 6px 10px; margin-left: 4px;">
-                                Detail
-                            </a>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
+            <?php foreach ($transaksi as $t): ?>
+            <tr>
+                <td><code><?= e($t['kode_booking']) ?></code></td>
+                <td><?= e($t['judul_event']) ?></td>
+                <td><?= format_tanggal($t['created_at']) ?></td>
+                <td><?= format_rupiah((int)$t['total_bayar']) ?></td>
+                <td><span class="badge <?= status_class($t['status_bayar']) ?>"><?= label_status($t['status_bayar']) ?></span></td>
+                <td>
+                    <a href="detail_pesanan.php?kode=<?= e($t['kode_booking']) ?>" class="btn btn-outline btn-sm">Detail</a>
+                    <?php if ($t['status_bayar'] === 'Paid'): ?>
+                    <a href="etiket.php?kode=<?= e($t['kode_booking']) ?>" class="btn btn-primary btn-sm">E-Ticket</a>
+                    <?php endif; ?>
+                </td>
+                <td>
+                    <?php if ($t['status_bayar'] === 'Pending'): ?>
+                    <span class="countdown" data-deadline="<?= e(str_replace(' ', 'T', $t['batas_bayar_at']) . '+07:00') ?>">-</span>
+                    <?php else: ?>
+                    <span style="color:var(--color-text-muted);font-size:0.875rem;">-</span>
+                    <?php endif; ?>
+                </td>
+            </tr>
+            <?php endforeach; ?>
             </tbody>
         </table>
+    <?php endif; ?>
     </div>
-<?php endif; ?>
-
-<br>
-
-<div class="card" style="background: #F0FDF4; border-color: #BBF7D0;">
-    <h4 style="color: #166534; margin-bottom: 8px;">📋 Panduan Cetak E-Ticket</h4>
-    <ul style="color: #166534; margin-left: 20px; line-height: 1.8;">
-        <li>E-Ticket hanya bisa dicetak setelah status pembayaran <strong>Lunas</strong> (diverifikasi Panitia Keuangan).</li>
-        <li>Setiap tiket memiliki <strong>Kode E-Ticket Unik</strong> dan <strong>Barcode/QR Code</strong>.</li>
-        <li>Wajib membawa <strong>KTP Asli / Kartu Pelajar</strong> sesuai NIS/NIK tertera saat pemindaian di Gate.</li>
-        <li>1 Kode E-Ticket = 1 kali masuk. Scan kedua akan menampilkan peringatan <strong style="color: #E11D48;">"TIKET SUDAH DIGUNAKAN"</strong>.</li>
-    </ul>
 </div>
 
-<?php require_once __DIR__ . '/../src/Views/layouts/footer.php'; ?>
+<script>
+(function(){
+    document.querySelectorAll('[data-deadline]').forEach(function(el){
+        const deadline = new Date(el.getAttribute('data-deadline')).getTime();
+        function tick(){
+            const diff = deadline - new Date().getTime();
+            if (diff <= 0){
+                el.textContent = 'Waktu habis';
+                el.style.color = 'var(--color-error)';
+                el.style.fontWeight = '700';
+                return;
+            }
+            const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const s = Math.floor((diff % (1000 * 60)) / 1000);
+            el.textContent = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+        }
+        tick();
+        setInterval(tick, 1000);
+    });
+})();
+</script>
+
+<?php require __DIR__ . '/../src/Views/layouts/footer.php'; ?>

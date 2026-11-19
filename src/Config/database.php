@@ -1,7 +1,7 @@
 <?php
 /**
  * config/database.php
- * Koneksi PDO ke database db_pensi_sekolah
+ * Koneksi PDO ke database db_tiket_event_pro
  * Timezone Asia/Jakarta (WIB)
  *
  * Catatan produksi:
@@ -15,7 +15,9 @@ ini_set('log_errors', '1');
 date_default_timezone_set('Asia/Jakarta');
 
 // Konstanta aplikasi
-define('BATAS_WAKTU_BAYAR_MENIT', 15);       // 15 menit (per Mandat CEO PAKET 7)
+define('BATAS_WAKTU_BAYAR_MENIT', 15);       // 15 menit (Mandat CEO)
+define('BIAYA_LAYANAN_PER_TIKET', 2500);     // biaya layanan per lembar tiket
+define('MAX_TIKET_PER_EVENT', 5);            // batas akumulasi tiket per NIK per event
 define('UPLOAD_MAX_SIZE', 2 * 1024 * 1024);  // 2 MB
 define('UPLOAD_ALLOWED_MIME', ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp']);
 
@@ -96,7 +98,7 @@ if (!function_exists('pensi_load_hmac_secret')) {
 define('BARCODE_HMAC_SECRET', pensi_load_hmac_secret());
 
 $db_host    = getenv('DB_HOST') !== false ? getenv('DB_HOST') : 'localhost';
-$db_name    = getenv('DB_NAME') !== false ? getenv('DB_NAME') : 'db_pensi_sekolah';
+$db_name    = getenv('DB_NAME') !== false ? getenv('DB_NAME') : 'db_tiket_event_pro';
 $db_user    = getenv('DB_USER') !== false ? getenv('DB_USER') : 'pensi_app';
 $db_pass    = getenv('DB_PASS') !== false ? getenv('DB_PASS') : 'PensiApp2026!Secure#Pass';
 $db_charset = 'utf8mb4';

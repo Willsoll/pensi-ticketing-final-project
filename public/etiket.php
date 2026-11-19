@@ -1,200 +1,168 @@
 <?php
 /**
- * etiket.php - Cetak E-Ticket Satuan (Print View)
- * Hanya bisa diakses jika status_bayar = 'Lunas'
- * Menampilkan barcode SVG + data peserta
+ * etiket.php — Cetak E-Ticket (Pemilik / Admin EO / Finance)
+ * GET kode (kode_booking). Wajib status Paid. Daftar e-ticket per transaksi
+ * dengan barcode SVG (HMAC), status check-in, dan unduhan JPG/PDF per lembar.
  */
+declare(strict_types=1);
 require_once __DIR__ . '/../src/Config/database.php';
 require_once __DIR__ . '/../src/Middleware/middleware.php';
+release_expired_transactions($pdo);
 
 require_login();
 $user = current_user();
 
-$kode_raw       = $_GET['kode_transaksi'] ?? '';
-$kode_transaksi = is_string($kode_raw) ? mb_substr(trim($kode_raw), 0, 64) : '';
-if ($kode_transaksi === '') {
-    set_flash('ERROR', 'Kode transaksi tidak ditemukan.');
-    header('Location: dashboard_peserta.php');
-    exit;
+if (!function_exists('pensi_mask_nik')) {
+    function pensi_mask_nik(?string $nik): string
+    {
+        if ($nik === null || $nik === '') {
+            return '-';
+        }
+        $nik = (string)$nik;
+        $len = strlen($nik);
+        if ($len <= 8) {
+            return str_repeat('X', $len);
+        }
+        return substr($nik, 0, 4) . str_repeat('X', $len - 8) . substr($nik, -4);
+    }
 }
 
-// Ambil pesanan
-$stmt = $pdo->prepare("
-    SELECT p.*, j.nama_jenis, j.tipe_tiket
-    FROM pemesanan p
-    JOIN jenis_tiket j ON p.id_jenis = j.id_jenis
-    WHERE p.kode_transaksi = ?
-    LIMIT 1
-");
-$stmt->execute([$kode_transaksi]);
-$pesanan = $stmt->fetch();
+$kode = is_string($_GET['kode'] ?? null) ? mb_substr(trim($_GET['kode']), 0, 64) : '';
+$transaksi = null;
+$tiketList = [];
+$notLunas = false;
 
-if (!$pesanan) {
-    set_flash('ERROR', 'Data pesanan tidak ditemukan.');
-    header('Location: dashboard_peserta.php');
-    exit;
+if ($kode !== '') {
+    $stmt = $pdo->prepare(
+        'SELECT t.*, e.judul_event, e.lokasi, e.tgl_mulai, e.tipe_venue
+           FROM transaksi t
+           JOIN events e ON e.id_event = t.id_event
+          WHERE t.kode_booking = ?'
+    );
+    $stmt->execute([$kode]);
+    $transaksi = $stmt->fetch();
+
+    if (!$transaksi) {
+        set_flash('ERROR', 'Data transaksi tidak ditemukan.');
+        header('Location: index.php');
+        exit;
+    }
+
+    // Akses: pemilik transaksi, atau admin_eo / finance.
+    if ($user['role'] === 'customer' && (int)$transaksi['id_user'] !== (int)$user['id_user']) {
+        http_response_code(403);
+        include __DIR__ . '/../src/Views/403.php';
+        exit;
+    }
+
+    if ($transaksi['status_bayar'] !== 'Paid') {
+        $notLunas = true;
+    } else {
+        $stmtT = $pdo->prepare(
+            'SELECT et.*, tt.nama_tier, k.nomor_kursi
+               FROM e_tickets et
+               JOIN tiket_tier tt ON tt.id_tier = et.id_tier
+               LEFT JOIN kursi_event k ON k.id_kursi = et.id_kursi
+              WHERE et.id_transaksi = ?
+              ORDER BY et.id_etiket ASC'
+        );
+        $stmtT->execute([(int)$transaksi['id_transaksi']]);
+        $tiketList = $stmtT->fetchAll();
+    }
 }
 
-// Cek akses: customer hanya bisa lihat milik sendiri
-if ($user['role'] === 'pembeli' && (int)$pesanan['id_user'] !== (int)$user['id_user']) {
-    http_response_code(403);
-    set_flash('ERROR', 'Akses ditolak! E-Ticket ini bukan milik akun Anda.');
-    header('Location: dashboard_peserta.php');
-    exit;
-}
-
-// Cek status bayar
-if ($pesanan['status_bayar'] !== 'Lunas') {
-    set_flash('ERROR', 'E-Ticket hanya dapat dicetak setelah pembayaran berstatus LUNAS.');
-    header('Location: dashboard_peserta.php');
-    exit;
-}
-
-// Ambil detail tiket
-$stmtDet = $pdo->prepare("
-    SELECT dts.*, kp.nomor_kursi
-    FROM detail_tiket_satuan dts
-    LEFT JOIN kursi_pensi kp ON dts.id_kursi = kp.id_kursi
-    WHERE dts.id_pesan = ?
-    ORDER BY dts.id_detail_tiket ASC
-");
-$stmtDet->execute([(int)$pesanan['id_pesan']]);
-$detail_tiket = $stmtDet->fetchAll();
-
-$page_title = 'Cetak E-Ticket - ' . $kode_transaksi;
-// Gunakan layout print-only (tanpa header/footer standar)
+$pageTitle = 'E-Ticket ' . e($kode);
+$pageSubtitle = $transaksi ? e($transaksi['judul_event']) : 'PENSI EVENTPRO';
+$activeNav = 'index.php';
+require __DIR__ . '/../src/Views/layouts/header.php';
 ?>
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Ticket - <?= e($kode_transaksi) ?></title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f3f4f6; padding: 20px; }
-        @media print { body { background: white; padding: 0; } }
-        .container { max-width: 700px; margin: 0 auto; }
-        .etiket-card { background: white; border: 3px solid #111827; border-radius: 12px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-        .etiket-header { text-align: center; border-bottom: 2px solid #111827; padding-bottom: 16px; margin-bottom: 20px; }
-        .etiket-header h1 { color: #4F46E5; font-size: 1.75rem; margin-bottom: 4px; }
-        .etiket-header .sub { color: #EAB308; font-size: 1rem; font-weight: 600; }
-        .etiket-header .booking { margin-top: 8px; font-size: 0.875rem; color: #6B7280; }
-        .etiket-header .booking code { background: #F3F4F6; padding: 2px 6px; border-radius: 4px; }
-        .etiket-header .status { display: inline-block; margin-top: 8px; padding: 4px 12px; background: #D1FAE5; color: #065F46; border-radius: 9999px; font-weight: 700; font-size: 0.875rem; }
-        .ticket-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
-        .ticket-item { border: 1px solid #E5E7EB; border-radius: 8px; padding: 16px; }
-        .ticket-item.seated { border-left: 4px solid #4F46E5; }
-        .ticket-item.free { border-left: 4px solid #16A34A; }
-        .ticket-item h3 { color: #111827; font-size: 1rem; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #E5E7EB; }
-        .ticket-field { margin-bottom: 8px; font-size: 0.875rem; }
-        .ticket-field label { color: #6B7280; font-weight: 500; display: block; margin-bottom: 2px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; }
-        .ticket-field span { color: #111827; font-weight: 600; }
-        .ticket-field code { background: #F3F4F6; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; }
-        .barcode-section { text-align: center; padding: 16px; background: #FAFAFA; border-radius: 8px; margin-bottom: 16px; }
-        .barcode-section img, .barcode-section svg { max-width: 100%; height: auto; }
-        .footer-note { text-align: center; color: #6B7280; font-size: 0.75rem; border-top: 1px dashed #D1D5DB; padding-top: 12px; }
-        .no-print { text-align: center; margin-top: 20px; }
-        .no-print button,
-        .no-print .btn { background: #4F46E5; color: white; border: none; padding: 12px 28px; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; }
-        .no-print button:hover,
-        .no-print .btn:hover { background: #4338CA; }
-        .no-print a { display: inline-block; margin-top: 12px; color: #6B7280; text-decoration: none; }
-        @media print { .no-print { display: none !important; } .etiket-card { box-shadow: none; border: 2px solid #111827; } }
-    </style>
-</head>
-<body>
 
-<div class="container">
-    <?php foreach ($detail_tiket as $idx => $dt): 
-        $barcode_svg = render_barcode_svg($dt['kode_tiket_unik'], $dt['nik_pemegang_tiket']);
-        $is_seated = !empty($dt['nomor_kursi']);
-    ?>
-        <div class="etiket-card" style="page-break-after: <?= $idx < count($detail_tiket) - 1 ? 'always' : 'auto' ?>;">
-
-            <div class="etiket-header">
-                <h1>🎭 PENSI SCHOOL 2026</h1>
-                <div class="sub">Pentas Seni Tahunan Sekolah Terpadu Pahoa</div>
-                <div class="booking">
-                    Kode Transaksi: <code><?= e($pesanan['kode_transaksi']) ?></code> 
-                    &bull; Tiket #<?= $idx + 1 ?> dari <?= count($detail_tiket) ?>
-                </div>
-                <div class="status">✅ STATUS PEMBAYARAN: LUNAS</div>
-            </div>
-
-            <div class="ticket-grid">
-                <div class="ticket-item <?= $is_seated ? 'seated' : 'free' ?>">
-                    <h3>🎫 Informasi Tiket</h3>
-                    <div class="ticket-field">
-                        <label>Jenis Tiket</label>
-                        <span><?= e($pesanan['nama_jenis']) ?> (<?= e($pesanan['tipe_tiket']) ?>)</span>
-                    </div>
-                    <div class="ticket-field">
-                        <label>Kode E-Ticket Unik</label>
-                        <span><code><?= e($dt['kode_tiket_unik']) ?></code></span>
-                    </div>
-                    <div class="ticket-field">
-                        <label>Nomor Kursi / Zona</label>
-                        <span>
-                            <strong>
-                                <?= $is_seated ? 'Kursi ' . e($dt['nomor_kursi']) : 'Free Standing (Bebas)' ?>
-                            </strong>
-                        </span>
-                    </div>
-                </div>
-
-                <div class="ticket-item">
-                    <h3>👤 Data Peserta (Identity Binding)</h3>
-                    <div class="ticket-field">
-                        <label>Nama Lengkap</label>
-                        <span><strong><?= e($dt['nama_pemegang_tiket']) ?></strong></span>
-                    </div>
-                    <div class="ticket-field">
-                        <label>NIS / NIK KTP</label>
-                        <span><code><?= e($dt['nik_pemegang_tiket']) ?></code></span>
-                    </div>
-                    <div class="ticket-field">
-                        <label>Status Kehadiran</label>
-                        <span>
-                            <span class="badge badge-<?= $dt['status_checkin'] === 'Sudah Masuk' ? 'sudah-masuk' : 'belum-masuk' ?>">
-                                <?= e($dt['status_checkin']) ?>
-                            </span>
-                            <?php if ($dt['status_checkin'] === 'Sudah Masuk'): ?>
-                                <br><small>Check-in: <?= e(date('d-m-Y H:i', strtotime($dt['waktu_checkin']))) ?></small>
-                            <?php endif; ?>
-                        </span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="barcode-section">
-                <strong>BARCODE / QR CODE UNTUK GATE ENTRY</strong><br><br>
-                <?= $barcode_svg ?><br><br>
-                <small style="color: #6B7280;">
-                    Wajib membawa <strong>KTP Asli / Kartu Pelajar</strong> sesuai NIK/NIS tertera saat pemindaian di pintu masuk acara.
-                </small>
-            </div>
-
-            <div class="footer-note">
-                E-Ticket ini bersifat personal (Identity Binding) dan hanya berlaku untuk 1 kali masuk.<br>
-                Acara: Pensi School 2026 &bull; Sabtu, 12 Desember 2026 &bull; 17:00-22:00 WIB<br>
-                Lokasi: Aula Serbaguna Sekolah Terpadu Pahoa, Jl. Raya Serpong, Tangerang Selatan
-            </div>
+<div class="card card-elevated">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
+        <div>
+            <h2 style="margin:0 0 4px 0;font-size:20px;">E-Ticket <?= e($kode) ?></h2>
+            <p style="margin:0;color:var(--color-text-secondary);font-size:14px;">
+                <?= e($transaksi['judul_event'] ?? '') ?> ·
+                <?= e($transaksi['lokasi'] ?? '') ?> ·
+                <?= format_tanggal($transaksi['tgl_mulai'] ?? null, false) ?? '' ?>
+            </p>
         </div>
-    <?php endforeach; ?>
-
-    <div class="no-print">
-        <button type="button" onclick="window.print();"><strong>🖨️ CETAK SEMUA E-TICKET (PRINT)</strong></button>
-        <br><br>
-        <a href="etiket_png.php?kode_transaksi=<?= urlencode($kode_transaksi) ?>" class="btn btn-primary">⬇️ Download JPG</a>
-        <a href="etiket_pdf.php?kode_transaksi=<?= urlencode($kode_transaksi) ?>" class="btn btn-primary">⬇️ Download PDF</a>
-        <?php if (count($detail_tiket) > 1): ?>
-            <br><br><small style="color:#6B7280;">Unduhan PDF mencakup semua halaman tiket dalam transaksi ini.</small>
-        <?php endif; ?>
-        <br><br>
-        <a href="dashboard_peserta.php">[ &larr; Kembali ke Dashboard Peserta ]</a>
+        <div class="no-print" style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button type="button" class="btn btn-primary" onclick="window.print();"><strong>🖨️ Cetak</strong></button>
+        </div>
     </div>
+
+    <?php if ($notLunas): ?>
+        <div class="alert alert-info" role="status">
+            <strong>E-ticket belum tersedia.</strong> E-ticket untuk transaksi ini akan diterbitkan
+            setelah pembayaran berstatus <strong>Lunas</strong> (saat ini:
+            <?= e(label_status($transaksi['status_bayar'])) ?>).
+        </div>
+    <?php elseif (empty($tiketList)): ?>
+        <div class="empty-state">
+            <p>Belum ada e-ticket yang diterbitkan untuk transaksi ini.</p>
+        </div>
+    <?php else: ?>
+        <p style="margin-bottom:12px;color:var(--color-text-muted);font-size:14px;">
+            Total <strong><?= count($tiketList) ?></strong> lembar e-ticket. NIK ditampilkan dengan maskir;
+            NIK lengkap terdapat pada berkas unduhan dan divalidasi petugas gate saat check-in.
+        </p>
+
+        <div style="display:grid;grid-template:repeat(auto-fill,minmax(300px,1fr))/1fr;gap:16px;">
+            <?php $no = 0; foreach ($tiketList as $t): $no++; ?>
+                <div class="card" style="page-break-inside:avoid;">
+                    <div style="border-bottom:2px solid #111827;padding-bottom:10px;margin-bottom:12px;">
+                        <div style="font-size:16px;font-weight:700;letter-spacing:2px;">PENSI EVENTPRO</div>
+                        <div style="font-size:13px;color:var(--color-text-secondary);margin-top:2px;">
+                            <?= e($transaksi['judul_event']) ?>
+                        </div>
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;margin-bottom:14px;">
+                        <div>
+                            <div style="font-size:12px;color:var(--color-text-muted);text-transform:uppercase;">Nama Peserta</div>
+                            <div style="font-weight:600;"><?= e($t['nama_peserta']) ?></div>
+                        </div>
+                        <div>
+                            <div style="font-size:12px;color:var(--color-text-muted);text-transform:uppercase;">NIK</div>
+                            <div style="font-family:monospace;font-size:13px;"><code><?= pensi_mask_nik($t['nik_peserta']) ?></code></div>
+                        </div>
+                        <div>
+                            <div style="font-size:12px;color:var(--color-text-muted);text-transform:uppercase;">Tier</div>
+                            <div style="font-weight:600;"><?= e($t['nama_tier']) ?></div>
+                        </div>
+                        <div>
+                            <div style="font-size:12px;color:var(--color-text-muted);text-transform:uppercase;">Kursi</div>
+                            <div style="font-weight:600;">
+                                <?= !empty($t['nomor_kursi']) ? 'Kursi ' . e($t['nomor_kursi']) : 'Free Standing' ?>
+                            </div>
+                        </div>
+                        <div>
+                            <div style="font-size:12px;color:var(--color-text-muted);text-transform:uppercase;">Kode Tiket</div>
+                            <div style="font-family:monospace;font-size:13px;font-weight:600;"><code><?= e($t['kode_tiket']) ?></code></div>
+                        </div>
+                        <div>
+                            <div style="font-size:12px;color:var(--color-text-muted);text-transform:uppercase;">Status Check-in</div>
+                            <span class="badge <?= $t['status_checkin'] === 'Sudah Hadir' ? 'badge-success' : 'badge-info' ?>">
+                                <?= e($t['status_checkin']) ?>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div style="border:1px dashed var(--color-border);border-radius:8px;padding:14px;text-align:center;background:#f8fafc;margin-bottom:12px;">
+                        <div style="font-size:12px;color:var(--color-text-muted);margin-bottom:6px;">Barcode untuk Gate Entry</div>
+                        <?= render_barcode_svg($t['kode_tiket'], $t['nik_peserta']) ?>
+                        <div style="font-size:12px;color:var(--color-text-muted);margin-top:6px;"><?= e($t['kode_tiket']) ?></div>
+                    </div>
+
+                    <div class="no-print" style="display:flex;gap:8px;">
+                        <a href="etiket_png.php?kode=<?= urlencode($kode) ?>&amp;n=<?= $no ?>" class="btn btn-outline btn-sm">Unduh JPG</a>
+                        <a href="etiket_pdf.php?kode=<?= urlencode($kode) ?>&amp;n=<?= $no ?>" class="btn btn-outline btn-sm">Unduh PDF</a>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
 </div>
 
-</body>
-</html>
+<?php require __DIR__ . '/../src/Views/layouts/footer.php'; ?>

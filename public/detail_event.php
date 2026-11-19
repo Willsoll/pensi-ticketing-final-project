@@ -1,354 +1,272 @@
 <?php
 /**
- * detail_event.php - Detail Jenis Tiket & Pemilihan Kursi/Kuantitas
- * Hanya bisa diakses setelah login sebagai pembeli
- * Redesigned with Pensi Design System v1.0
+ * detail_event.php - Detail event, rundown, dan pemilihan tiket (public)
+ * Memerlukan id_event via GET. Hanya event dengan status_event='Published' yang ditampilkan.
  */
 require_once __DIR__ . '/../src/Config/database.php';
 require_once __DIR__ . '/../src/Middleware/middleware.php';
 
 release_expired_transactions($pdo);
 
-$id_jenis_raw = $_GET['id_jenis'] ?? $_POST['id_jenis'] ?? 0;
-$id_jenis     = is_numeric($id_jenis_raw) ? (int)$id_jenis_raw : 0;
-if ($id_jenis <= 0) {
-    set_flash('ERROR', 'Jenis tiket tidak valid.');
-    header('Location: index.php');
+$idEventRaw = $_GET['id_event'] ?? '';
+$idEvent    = is_numeric($idEventRaw) ? (int)$idEventRaw : 0;
+
+if ($idEvent <= 0) {
+    header('Location: error.php?msg=' . urlencode('ID event tidak valid.'));
     exit;
 }
 
-// Ambil info jenis tiket
-$stmtJenis = $pdo->prepare("SELECT * FROM jenis_tiket WHERE id_jenis = ? LIMIT 1");
-$stmtJenis->execute([$id_jenis]);
-$jenis = $stmtJenis->fetch();
+$stmtEvent = $pdo->prepare("
+    SELECT e.id_event, e.id_kat_event, e.judul_event, e.penyelenggara, e.lokasi,
+           e.tipe_venue, e.tgl_mulai, e.tgl_selesai, e.banner, e.deskripsi, e.status_event,
+           k.nama_kategori
+    FROM events e
+    JOIN kategori_event k ON k.id_kat_event = e.id_kat_event
+    WHERE e.id_event = ? AND e.status_event = 'Published'
+    LIMIT 1
+");
+$stmtEvent->execute([$idEvent]);
+$event = $stmtEvent->fetch();
 
-if (!$jenis) {
-    set_flash('ERROR', 'Data jenis tiket tidak ditemukan.');
-    header('Location: index.php');
+if (!$event) {
+    header('Location: error.php?msg=' . urlencode('Event tidak ditemukan atau belum dipublikasikan.'));
     exit;
 }
 
-// Jika tipe Seated, ambil daftar kursi
-$kursi_list = [];
-if ($jenis['tipe_tiket'] === 'Seated') {
-    $stmtKursi = $pdo->prepare("SELECT * FROM kursi_pensi WHERE id_jenis = ? ORDER BY nomor_kursi ASC");
-    $stmtKursi->execute([$id_jenis]);
-    $kursi_list = $stmtKursi->fetchAll();
+$isLoggedIn = is_logged_in();
+$now = date('Y-m-d H:i:s');
+
+/* Rundown */
+$stmtRundown = $pdo->prepare("
+    SELECT judul_sesi, pembicara, jam_mulai, jam_selesai, lokasi_panggung
+    FROM event_rundown
+    WHERE id_event = ?
+    ORDER BY jam_mulai ASC
+");
+$stmtRundown->execute([$idEvent]);
+$rundown = $stmtRundown->fetchAll();
+
+/* Tier dengan kursi (untuk event Seated) diambil sekaligus dan dikelompokkan per tier */
+$stmtTiers = $pdo->prepare("
+    SELECT id_tier, nama_tier, harga, kuota_total, kuota_tersedia, kuota_locked, batas_jual
+    FROM tiket_tier
+    WHERE id_event = ?
+    ORDER BY harga ASC
+");
+$stmtTiers->execute([$idEvent]);
+$tiers = $stmtTiers->fetchAll();
+
+$seatsByTier = [];
+foreach ($tiers as $t) {
+    $seatsByTier[(int)$t['id_tier']] = [];
 }
-
-$error = '';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aksi'] ?? '') === 'lanjut_pemesanan') {
-    // Cek login & role pembeli
-    if (!is_logged_in()) {
-        set_flash('ERROR', 'Silakan login sebagai Pembeli terlebih dahulu.');
-        header('Location: login.php');
-        exit;
-    }
-    if ((current_user()['role'] ?? '') !== 'pembeli') {
-        set_flash('ERROR', 'Hanya akun Pembeli yang dapat memesan tiket.');
-        header('Location: detail_event.php?id_jenis=' . $id_jenis);
-        exit;
-    }
-
-    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
-        $error = 'Token keamanan (CSRF) tidak valid.';
-    } elseif ((int)$jenis['stok_tersedia'] <= 0) {
-        $error = 'Maaf, stok tiket untuk jenis ini sudah habis.';
-    } else {
-        $user = current_user();
-
-        // MANDAT CEO: Segmentasi Hak Beli Tiket
-        $user_tipe = $user['tipe_pengguna']; // 'Internal' atau 'Eksternal'
-        $target_pembeli = $jenis['target_pembeli']; // 'Internal', 'Eksternal', 'Semua'
-
-        if ($target_pembeli === 'Internal' && $user_tipe === 'Eksternal') {
-            $error = 'Tiket ini hanya untuk Siswa Internal (NIS). Akun Eksternal (NIK) tidak diperbolehkan memesan.';
-        } elseif ($target_pembeli === 'Eksternal' && $user_tipe === 'Internal') {
-            $error = 'Tiket ini hanya untuk Tamu Eksternal (NIK). Akun Siswa Internal (NIS) tidak diperbolehkan memesan.';
-        }
-
-        if (empty($error)) {
-            if ($jenis['tipe_tiket'] === 'Seated') {
-                // Pilih kursi
-                $kursi_ids = $_POST['kursi_ids'] ?? [];
-                if (!is_array($kursi_ids) || count($kursi_ids) < 1) {
-                    $error = 'Wajib memilih minimal 1 nomor kursi yang tersedia.';
-                } elseif (count($kursi_ids) > 5) {
-                    $error = 'Maksimal pemilihan 5 kursi per transaksi.';
-                } elseif (count($kursi_ids) > (int)$jenis['stok_tersedia']) {
-                    $error = 'Jumlah kursi melebihi sisa stok tersedia (' . (int)$jenis['stok_tersedia'] . ').';
-                } else {
-                    $clean_ids = array_map('intval', $kursi_ids);
-                    $ph = implode(',', array_fill(0, count($clean_ids), '?'));
-                    $cekK = $pdo->prepare("
-                        SELECT id_kursi, nomor_kursi FROM kursi_pensi
-                        WHERE id_jenis = ? AND status_kursi = 'Available' AND id_kursi IN ({$ph})
-                        ORDER BY nomor_kursi ASC
-                    ");
-                    $cekK->execute(array_merge([$id_jenis], $clean_ids));
-                    $valid_seats = $cekK->fetchAll();
-
-                    if (count($valid_seats) !== count($clean_ids)) {
-                        $error = 'Sebagian kursi yang dipilih sudah tidak tersedia. Silakan pilih ulang.';
-                    } else {
-                        // Simpan draft ke session
-                        $_SESSION['pensi_booking_draft'] = [
-                            'id_jenis'    => $id_jenis,
-                            'tipe_tiket'  => 'Seated',
-                            'qty'         => count($valid_seats),
-                            'seats'       => $valid_seats,
-                        ];
-                        header('Location: pemesanan.php');
-                        exit;
-                    }
-                }
-            } else {
-                // Free Standing - input kuantitas
-                $qty_raw = $_POST['qty'] ?? 0;
-                $qty = is_numeric($qty_raw) ? (int)$qty_raw : 0;
-                if ($qty < 1 || $qty > 5) {
-                    $error = 'Jumlah tiket minimal 1 dan maksimal 5 lembar per transaksi.';
-                } elseif ($qty > (int)$jenis['stok_tersedia']) {
-                    $error = 'Jumlah tiket melebihi sisa stok tersedia (' . (int)$jenis['stok_tersedia'] . ' tiket).';
-                } else {
-                    $_SESSION['pensi_booking_draft'] = [
-                        'id_jenis'    => $id_jenis,
-                        'tipe_tiket'  => 'Free Standing',
-                        'qty'         => $qty,
-                        'seats'       => [],
-                    ];
-                    header('Location: pemesanan.php');
-                    exit;
-                }
-            }
-        }
+if (!empty($tiers)) {
+    $tierIds = array_map(fn($t) => (int)$t['id_tier'], $tiers);
+    $ph = implode(',', array_fill(0, count($tierIds), '?'));
+    $stmtSeats = $pdo->prepare("
+        SELECT id_kursi, id_tier, nomor_kursi, status_kursi
+        FROM kursi_event
+        WHERE id_tier IN ({$ph})
+        ORDER BY id_tier ASC, nomor_kursi ASC
+    ");
+    $stmtSeats->execute($tierIds);
+    foreach ($stmtSeats->fetchAll() as $s) {
+        $seatsByTier[(int)$s['id_tier']][] = $s;
     }
 }
 
-$page_title = 'Detail & Pemesanan - ' . $jenis['nama_jenis'];
-require_once __DIR__ . '/../src/Views/layouts/header.php';
+$pageTitle   = 'Detail - ' . e($event['judul_event']);
+$pageSubtitle = 'Pilih tiket dan atur pesanan Anda';
+$activeNav   = 'index.php';
+require __DIR__ . '/../src/Views/layouts/header.php';
 ?>
 
-<div class="breadcrumb">
-    <a href="index.php">Katalog Acara</a> > <a href="detail_event.php?id_jenis=<?= $id_jenis ?>"><?= e($jenis['nama_jenis']) ?></a>
+<div style="margin-bottom:var(--space-6);">
+    <a href="index.php" class="btn btn-ghost btn-sm">&larr; Kembali ke Katalog</a>
 </div>
 
-<div class="card card-elevated" style="margin-bottom: var(--space-6);">
-    <div class="card-header">
-        <h2 class="card-title" style="margin: 0;"><?= e($jenis['nama_jenis']) ?></h2>
-        <div style="display: flex; gap: var(--space-3); align-items: center;">
-            <?php 
-            $target_badge = $jenis['target_pembeli'] === 'Internal' ? 'badge-primary' : ($jenis['target_pembeli'] === 'Eksternal' ? 'badge-accent' : 'badge-success');
-            $tipe_badge = $jenis['tipe_tiket'] === 'Seated' ? 'badge-success' : 'badge-primary';
-            ?>
-            <span class="badge <?= $target_badge ?>">Target: <?= e($jenis['target_pembeli']) ?></span>
-            <span class="badge <?= $tipe_badge ?>"><?= e($jenis['tipe_tiket']) ?></span>
+<div class="card card-elevated" style="margin-bottom:var(--space-6);">
+    <div class="event-banner" style="<?= !empty($event['banner']) ? 'background-image:url(' . e($event['banner']) . ');background-size:cover;background-position:center;' : '' ?>"></div>
+    <div class="card-body" style="padding:var(--space-5);">
+        <div style="display:flex;align-items:center;gap:var(--space-3);margin-bottom:var(--space-3);flex-wrap:wrap;">
+            <span class="badge badge-primary"><?= e($event['nama_kategori']) ?></span>
+            <span class="badge badge-info"><?= e($event['tipe_venue']) ?></span>
         </div>
-    </div>
-    <div class="card-body">
-        <div class="grid grid-cols-1 grid-cols-4" style="gap: var(--space-4);">
-            <div class="stat-card stat-card-primary">
-                <div class="stat-card-label">Harga Satuan</div>
-                <div class="stat-card-value" style="color: var(--color-primary);"><?= format_rupiah((int)$jenis['harga']) ?></div>
-            </div>
-            <div class="stat-card stat-card-success">
-                <div class="stat-card-label">Total Stok</div>
-                <div class="stat-card-value"><?= (int)$jenis['stok_tiket'] ?></div>
-            </div>
-            <div class="stat-card stat-card-info">
-                <div class="stat-card-label">Sisa Tersedia</div>
-                <div class="stat-card-value" style="color: var(--color-success);"><?= (int)$jenis['stok_tersedia'] ?></div>
-            </div>
-            <div class="stat-card stat-card-warning">
-                <div class="stat-card-label">Tertahan (Locked)</div>
-                <div class="stat-card-value"><?= (int)$jenis['stok_tertahan'] ?></div>
-            </div>
+        <h1 style="font-size:var(--text-2xl);font-weight:700;margin:0 0 var(--space-3) 0;color:var(--color-text-primary);"><?= e($event['judul_event']) ?></h1>
+        <div class="event-meta" style="font-size:var(--text-sm);color:var(--color-text-muted);gap:var(--space-3);flex-wrap:wrap;margin-bottom:var(--space-4);">
+            <span><strong>Penyelenggara:</strong> <?= e($event['penyelenggara']) ?></span>
+            <span><strong>Lokasi:</strong> <?= e($event['lokasi']) ?></span>
+            <span><strong>Tanggal:</strong> <?= e(format_tanggal($event['tgl_mulai'], false)) ?> &ndash; <?= e(format_tanggal($event['tgl_selesai'], false)) ?></span>
         </div>
-    </div>
-</div>
 
-<?php if ($error !== ''): ?>
-    <div class="alert alert-error" role="alert" style="margin-bottom: var(--space-6);">
-        <div class="alert-icon">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>
-        </div>
-        <div class="alert-content">
-            <div class="alert-message"><?= e($error) ?></div>
-        </div>
-    </div>
-<?php endif; ?>
+        <h3 style="font-size:var(--text-lg);font-weight:600;margin:0 0 var(--space-3) 0;color:var(--color-text-primary);">Deskripsi</h3>
+        <p style="color:var(--color-text-secondary);margin:0;"><?= nl2br(e($event['deskripsi'] ?? 'Deskripsi event belum tersedia.')) ?></p>
 
-<?php if (!is_logged_in()): ?>
-    <div class="card card-elevated" style="background: var(--color-info-bg); border-color: var(--color-info-border); margin-bottom: var(--space-6);">
-        <div class="card-body">
-            <div class="flex items-center gap-4">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-info)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                    <circle cx="12" cy="10" r="3"/>
-                </svg>
-                <div>
-                    <strong style="color: var(--color-info);">Silakan login terlebih dahulu</strong>
-                    <p style="margin-top: var(--space-1); color: var(--color-text-secondary);">Anda harus login sebagai Pembeli untuk memesan tiket.</p>
-                </div>
-            </div>
-            <div style="margin-top: var(--space-4);">
-                <a href="login.php" class="btn btn-primary">Login Sebagai Pembeli</a>
-            </div>
-        </div>
-    </div>
-<?php else: 
-    $user = current_user();
-    // Cek segmentasi
-    $can_buy = true;
-    $seg_msg = '';
-    $seg_type = 'success';
-    if ($jenis['target_pembeli'] === 'Internal' && $user['tipe_pengguna'] === 'Eksternal') {
-        $can_buy = false;
-        $seg_msg = 'Tiket ini hanya untuk Siswa Internal (NIS). Akun Anda terdaftar sebagai Tamu Eksternal (NIK).';
-        $seg_type = 'error';
-    } elseif ($jenis['target_pembeli'] === 'Eksternal' && $user['tipe_pengguna'] === 'Internal') {
-        $can_buy = false;
-        $seg_msg = 'Tiket ini hanya untuk Tamu Eksternal (NIK). Akun Anda terdaftar sebagai Siswa Internal (NIS).';
-        $seg_type = 'error';
-    } else {
-        $seg_msg = 'Akun Anda (' . label_tipe_pengguna($user['tipe_pengguna']) . ') diperbolehkan memesan tiket ini.';
-        $seg_type = 'success';
-    }
-?>
-    <div class="alert alert-<?= $seg_type ?>" role="alert" style="margin-bottom: var(--space-6);">
-        <div class="alert-icon">
-            <?php if ($seg_type === 'success'): ?>
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-            <?php else: ?>
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>
-            <?php endif; ?>
-        </div>
-        <div class="alert-content">
-            <div class="alert-message"><?= e($seg_msg) ?></div>
-        </div>
-    </div>
-<?php endif; ?>
-
-<?php if ((int)$jenis['stok_tersedia'] <= 0): ?>
-    <div class="alert alert-error" role="alert" style="margin-bottom: var(--space-6);">
-        <div class="alert-icon">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>
-        </div>
-        <div class="alert-content">
-            <div class="alert-message">Stok tiket untuk jenis ini sudah habis (Sold Out).</div>
-        </div>
-    </div>
-<?php elseif (is_logged_in() && $can_buy): ?>
-
-<form method="POST" action="detail_event.php" novalidate>
-    <input type="hidden" name="csrf_token" value="<?= e(generate_csrf_token()) ?>">
-    <input type="hidden" name="aksi" value="lanjut_pemesanan">
-    <input type="hidden" name="id_jenis" value="<?= $id_jenis ?>">
-
-    <div class="card card-elevated" style="margin-bottom: var(--space-6);">
-        <div class="card-header">
-            <h3 class="card-title">Konfigurasi Pemesanan</h3>
-        </div>
-        <div class="card-body">
-
-            <?php if ($jenis['tipe_tiket'] === 'Seated'): ?>
-                <p style="margin-bottom: var(--space-4); color: var(--color-text-secondary);">
-                    <strong>Denah Kursi Interaktif (Tipe: Seated):</strong> Centang nomor kursi berstatus 
-                    <span class="badge badge-success">Available</span> (maksimal 5 kursi).
-                </p>
-
-                <div class="stage-indicator" aria-label="Panggung utama">
-                    [ PANGGUNG UTAMA / LAYAR PRESENTASI ]
-                </div>
-
-                <?php if (empty($kursi_list)): ?>
-                    <div class="alert alert-warning" role="alert">
-                        <div class="alert-icon">
-                            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
-                        </div>
-                        <div class="alert-content">
-                            <div class="alert-message">Nomor kursi untuk jenis ini belum dibuat oleh Admin OSIS.</div>
-                        </div>
-                    </div>
-                <?php else: ?>
-                    <div class="seat-map" role="list" aria-label="Pemilihan kursi">
-                        <?php foreach ($kursi_list as $kr): 
-                            $cls = 'seat seat-' . strtolower($kr['status_kursi']);
-                        ?>
-                            <div class="<?= $cls ?>" role="listitem" tabindex="0">
-                                <?php if ($kr['status_kursi'] === 'Available'): ?>
-                                    <label style="cursor: pointer; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                                        <input type="checkbox" name="kursi_ids[]" value="<?= (int)$kr['id_kursi'] ?>" class="seat-cb" style="position: absolute; opacity: 0; pointer-events: none;">
-                                        <strong><?= e($kr['nomor_kursi']) ?></strong>
-                                        <span style="font-size: 10px; color: var(--color-success);">[Available]</span>
-                                    </label>
-                                <?php elseif ($kr['status_kursi'] === 'Locked'): ?>
-                                    <del><?= e($kr['nomor_kursi']) ?></del>
-                                    <span style="font-size: 10px; color: var(--color-warning);">[Locked]</span>
-                                <?php else: ?>
-                                    <del><?= e($kr['nomor_kursi']) ?></del>
-                                    <span style="font-size: 10px; color: var(--color-error);">[Sold]</span>
-                                <?php endif; ?>
-                            </div>
+        <?php if (!empty($rundown)): ?>
+            <h3 style="font-size:var(--text-lg);font-weight:600;margin:var(--space-6) 0 var(--space-3) 0;color:var(--color-text-primary);">Rundown Acara</h3>
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th style="width:16%;">Jam</th>
+                            <th style="width:34%;">Sesi</th>
+                            <th style="width:30%;">Pembicara</th>
+                            <th>Panggung</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($rundown as $r): ?>
+                            <tr>
+                                <td style="font-variant-numeric:tabular-nums;"><?= e(date('H:i', strtotime($r['jam_mulai']))) ?> &ndash; <?= e(date('H:i', strtotime($r['jam_selesai']))) ?></td>
+                                <td><?= e($r['judul_sesi']) ?></td>
+                                <td><?= e($r['pembicara']) ?></td>
+                                <td><?= e($r['lokasi_panggung']) ?></td>
+                            </tr>
                         <?php endforeach; ?>
-                    </div>
-                    <p style="margin-top: var(--space-4); font-size: var(--text-xs); color: var(--color-text-muted);">
-                        Keterangan: 
-                        <span class="badge badge-success">Available</span> = Tersedia | 
-                        <span class="badge badge-warning">Locked</span> = Sedang dibayar orang lain | 
-                        <span class="badge badge-error">Sold</span> = Terjual.
-                    </p>
-                <?php endif; ?>
-
-            <?php else: ?>
-                <p style="margin-bottom: var(--space-4); color: var(--color-text-secondary);">
-                    <strong>Tipe Venue: Free Standing</strong> (Tanpa nomor kursi tetap).
-                </p>
-                <div class="form-group">
-                    <label for="qty" class="form-label">Jumlah Tiket Dipesan (1 - 5 lembar)</label>
-                    <input type="number" id="qty" name="qty" class="form-input" min="1" max="<?= min(5, max(1, (int)$jenis['stok_tersedia'])) ?>" value="1" required style="max-width: 140px;">
-                </div>
-            <?php endif; ?>
-
-            <hr style="margin: var(--space-6) 0;">
-
-            <div class="flex justify-end">
-                <button type="submit" class="btn btn-cta" style="font-size: var(--text-base); padding: var(--space-4) var(--space-8);">
-                    <strong>LANJUT KE PENGISIAN DATA PEMEGANG TIKET (IDENTITY BINDING) →</strong>
-                </button>
+                    </tbody>
+                </table>
             </div>
-        </div>
-    </div>
-</form>
+        <?php endif; ?>
 
-<?php endif; ?>
+        <h3 style="font-size:var(--text-lg);font-weight:600;margin:var(--space-8) 0 var(--space-4) 0;color:var(--color-text-primary);">Pilih Tiket</h3>
+
+        <?php if (empty($tiers)): ?>
+            <div class="alert alert-info" role="alert">
+                <div class="alert-content">
+                    <div class="alert-message">Belum ada tier tiket yang tersedia untuk event ini.</div>
+                </div>
+            </div>
+        <?php endif; ?>
+
+        <?php foreach ($tiers as $tier): ?>
+            <?php
+            $idTier   = (int)$tier['id_tier'];
+            $harga    = (int)$tier['harga'];
+            $total    = (int)$tier['kuota_total'];
+            $tersedia = (int)$tier['kuota_tersedia'];
+            $locked   = (int)$tier['kuota_locked'];
+            $batasJual= $tier['batas_jual'];
+            $isPast   = $batasJual !== '' && $now > $batasJual;
+            $isSold   = $tersedia <= 0 || $isPast;
+            $occ      = $total > 0 ? round((($total - $tersedia) / $total) * 100) : 0;
+            $seats    = $seatsByTier[$idTier] ?? [];
+            ?>
+            <div class="card card-elevated" style="margin-bottom:var(--space-5);overflow:hidden;">
+                <div class="card-body" style="padding:var(--space-5);">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:var(--space-4);flex-wrap:wrap;margin-bottom:var(--space-4);">
+                        <div>
+                            <h3 style="font-size:var(--text-lg);font-weight:700;margin:0 0 var(--space-1) 0;color:var(--color-text-primary);"><?= e($tier['nama_tier']) ?></h3>
+                            <div style="font-size:var(--text-base);font-weight:700;color:var(--color-primary);"><?= format_rupiah($harga) ?></div>
+                        </div>
+                        <span class="badge <?= $isSold ? 'badge-error' : 'badge-success' ?>">
+                            <?= $isSold ? 'Tidak Tersedia' : 'Tersedia (' . $tersedia . ')' ?>
+                        </span>
+                    </div>
+
+                    <div class="occupancy-row">
+                        <span style="font-size:12px;color:var(--color-text-muted);width:90px;">Sisa kuota</span>
+                        <div class="bar" style="<?= $isSold ? 'background:var(--color-border-muted);' : '' ?>">
+                            <i style="width:<?= $occ ?>%;background:<?= $isSold ? 'var(--color-text-muted)' : 'var(--color-success,#059669)' ?>;"></i>
+                        </div>
+                        <span style="font-size:12px;font-variant-numeric:tabular-nums;"><?= $tersedia ?> / <?= $total ?> tersedia</span>
+                    </div>
+
+                    <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:var(--space-2);">
+                        Batas jual: <?= $batasJual !== '' ? e(format_tanggal($batasJual)) : '-' ?>
+                        <?= $isPast ? ' <span style="color:var(--color-error);"><strong>(lewat waktu)</strong></span>' : '' ?>
+                    </div>
+
+                    <?php if (!$isSold): ?>
+                        <div style="margin-top:var(--space-5);">
+                            <?php if ($event['tipe_venue'] === 'Seated'): ?>
+                                <p style="font-size:var(--text-xs);color:var(--color-text-secondary);margin:0 0 var(--space-3) 0;">
+                                    <?= $isLoggedIn ? '' : 'Pratinjau kursi — login diperlukan untuk melanjutkan.' ?><br>Pilih kursi (maksimal 5): <span id="seatCount-<?= $idTier ?>" style="font-weight:700;color:var(--color-primary);">0</span> / 5
+                                </p>
+                                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:8px;max-height:320px;overflow-y:auto;border:1px solid var(--color-border);border-radius:var(--radius-md);padding:var(--space-3);background:var(--color-bg-muted);margin-bottom:var(--space-4);">
+<div class="seat-legend"><span><i style="background:#86EFAC"></i>Available</span><span><i style="background:#FCD34D"></i>Locked</span><span><i style="background:#D1D5DB"></i>Sold</span><span><i style="background:#F97316"></i>Dipilih</span></div>
+<div class="seat-stage">PANGGUNG / STAGE</div>
+                                    <?php if (empty($seats)): ?>
+                                        <div style="grid-column:1/-1;text-align:center;color:var(--color-text-muted);font-size:var(--text-xs);">Belum ada kursi tersedia untuk tier ini.</div>
+                                    <?php else: ?>
+                                        <form method="GET" action="pemesanan.php" onsubmit="return validateSeatSelection(<?= $idTier ?>, 5);" style="display:contents;">
+                                            <input type="hidden" name="id_event" value="<?= $idEvent ?>">
+                                            <input type="hidden" name="id_tier" value="<?= $idTier ?>">
+                                            <?php foreach ($seats as $s): ?>
+                                                <?php
+                                                $statusKursi = $s['status_kursi'];
+                                                $isAvailable = $statusKursi === 'Available';
+                                                $disabled    = !$isAvailable ? 'disabled' : '';
+                                                $muted       = !$isAvailable ? 'opacity:0.55;filter:grayscale(1);' : '';
+                                                ?>
+                                                <label class="seat-chip <?= $isAvailable ? 'seat-avail' : ($statusKursi === 'Locked' ? 'seat-locked' : 'seat-sold') ?>" title="<?= e($s['nomor_kursi']) ?> - <?= e($statusKursi) ?>">
+                                                    <input type="checkbox" name="kursi[]" value="<?= (int)$s['id_kursi'] ?>" class="seat-cb-<?= $idTier ?>" data-tier="<?= $idTier ?>" <?= $disabled ?> style="width:18px;height:18px;margin-bottom:4px;accent-color:var(--color-success);">
+                                                    <strong style="font-size:11px;color:var(--color-text-primary);"><?= e($s['nomor_kursi']) ?></strong>
+                                                    <span style="font-size:8px;color:var(--color-text-muted);"><?= $isAvailable ? '' : e(strtolower($statusKursi)) ?></span>
+                                                </label>
+                                            <?php endforeach; ?>
+                                            <button type="submit" class="btn btn-primary btn-sm" style="width:100%;margin-top:var(--space-3);grid-column:1/-1;"><?= $isLoggedIn ? 'Lanjut Pemesanan' : 'Login untuk Memesan' ?></button>
+                                        </form>
+                                    <?php endif; ?>
+                                </div>
+                            <?php else: ?>
+                                <form method="GET" action="pemesanan.php">
+                                    <input type="hidden" name="id_event" value="<?= $idEvent ?>">
+                                    <input type="hidden" name="id_tier" value="<?= $idTier ?>">
+                                    <div class="form-group" style="margin-bottom:var(--space-4);">
+                                        <label class="form-label" style="font-size:var(--text-xs);">Jumlah tiket</label>
+                                        <input type="number" name="qty" class="form-control" min="1" max="<?= max(1, min(5, $tersedia)) ?>" value="1" style="max-width:140px;">
+                                    </div>
+                                    <button type="submit" class="btn btn-primary btn-sm" style="width:100%;"><?= $isLoggedIn ? 'Lanjut Pemesanan' : 'Login untuk Memesan' ?></button>
+                                </form>
+                            <?php endif; ?>
+                        </div>
+                    <?php else: ?>
+                        <div style="margin-top:var(--space-5);">
+                            <?php if (!$isLoggedIn): ?>
+                                <a href="login.php" class="btn btn-primary btn-sm" style="width:100%;">Login untuk Pemesanan</a>
+                            <?php else: ?>
+                                <span class="btn btn-primary btn-sm" style="width:100%;opacity:0.6;cursor:not-allowed;">Tidak Tersedia</span>
+                                <p style="font-size:var(--text-xs);color:var(--color-text-muted);margin-top:var(--space-2);">Pembelian tidak tersedia (kuota habis atau lewat batas jual).</p>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        <?php endforeach; ?>
+    </div>
+</div>
 
 <script>
-function validasiPilihKursiQty() {
-    var seatCbs = document.querySelectorAll('input.seat-cb');
-    if (seatCbs.length > 0) {
-        var checked = document.querySelectorAll('input.seat-cb:checked');
-        if (checked.length === 0) {
-            alert('Wajib memilih minimal 1 nomor kursi yang tersedia!');
-            return false;
-        }
-        if (checked.length > 5) {
-            alert('Maksimal pemilihan 5 kursi per transaksi.');
-            return false;
-        }
-    } else {
-        var qtyEl = document.getElementById('qty');
-        if (qtyEl) {
-            var q = parseInt(qtyEl.value, 10);
-            if (isNaN(q) || q < 1 || q > 5) {
-                alert('Jumlah tiket harus antara 1 hingga 5.');
-                return false;
-            }
-        }
+function validateSeatSelection(tierId, maxSelect) {
+    var cbs = document.querySelectorAll('.seat-cb-' + tierId + ':checked');
+    if (cbs.length === 0) {
+        alert('Pilih minimal 1 kursi.');
+        return false;
+    }
+    if (cbs.length > maxSelect) {
+        alert('Maksimal memilih ' + maxSelect + ' kursi.');
+        return false;
     }
     return true;
 }
+
+document.querySelectorAll('.seat-cb-<?php echo $tiers[0]['id_tier'] ?? 0; ?>').forEach(function(cb){
+    cb.addEventListener('change', function(){
+        var tier = this.getAttribute('data-tier');
+        var checked = document.querySelectorAll('.seat-cb-' + tier + ':checked').length;
+        var el = document.getElementById('seatCount-' + tier);
+        if (el) el.textContent = checked;
+        if (checked >= 5) {
+            document.querySelectorAll('.seat-cb-' + tier + ':not(:checked)').forEach(function(dis){
+                dis.disabled = true;
+            });
+        } else {
+            document.querySelectorAll('.seat-cb-' + tier).forEach(function(dis){
+                dis.disabled = false;
+            });
+        }
+    });
+});
 </script>
 
-<?php require_once __DIR__ . '/../src/Views/layouts/footer.php'; ?>
+<?php require __DIR__ . '/../src/Views/layouts/footer.php'; ?>
