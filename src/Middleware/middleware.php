@@ -5,6 +5,30 @@
  */
 declare(strict_types=1);
 
+/**
+ * Base path aplikasi agar bisa dijalankan di root domain maupun subfolder
+ * (XAMPP htdocs/pensi, Laragon www/pensi, vhost, atau DocumentRoot langsung).
+ */
+function base_path(): string
+{
+    static $base = null;
+    if ($base !== null) return $base;
+    $script = str_replace(chr(92), '/', $_SERVER['SCRIPT_NAME'] ?? '/index.php');
+    $dir = rtrim(str_replace(chr(92), '/', dirname($script)), '/');
+    if (basename($dir) === 'public') {
+        $dir = rtrim(str_replace(chr(92), '/', dirname($dir)), '/');
+    }
+    if ($dir === '.' || $dir === '/') $dir = '';
+    return $base = $dir;
+}
+
+function base_url(string $path = ''): string
+{
+    $path = ltrim($path, '/');
+    $base = base_path();
+    return ($base === '' ? '' : $base) . '/' . $path;
+}
+
 /* ---------------------------------------------------------------------------
  * Session & header keamanan dasar
  * ------------------------------------------------------------------------- */
@@ -13,7 +37,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_name('PENSI_EVENTPRO');
     session_set_cookie_params([
         'lifetime' => 0,
-        'path'     => '/',
+        'path'     => base_path() ?: '/',
         'domain'   => '',
         'secure'   => $https,
         'httponly' => true,

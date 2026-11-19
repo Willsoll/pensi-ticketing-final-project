@@ -124,9 +124,20 @@ if (!function_exists('pensi_draw_eticket_image')) {
         imagerectangle($im, 0, 0, $w - 1, $h - 1, $dark);
         imagesetthickness($im, 1);
 
-        $fontReg  = 'C:/Windows/Fonts/arial.ttf';
-        $fontBold = 'C:/Windows/Fonts/arialbd.ttf';
-        $hasTtf   = is_file($fontReg) && is_file($fontBold);
+        // Cari font yang tersedia (portabel: Windows, Linux hosting, atau folder assets/fonts).
+        $fontPairs = [
+            [__DIR__ . '/assets/fonts/arial.ttf', __DIR__ . '/assets/fonts/arialbd.ttf'],
+            ['C:/Windows/Fonts/arial.ttf', 'C:/Windows/Fonts/arialbd.ttf'],
+            ['C:/Windows/Fonts/segoeui.ttf', 'C:/Windows/Fonts/segoeuib.ttf'],
+            ['C:/Windows/Fonts/calibri.ttf', 'C:/Windows/Fonts/calibrib.ttf'],
+            ['/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'],
+            ['/usr/share/fonts/dejavu/DejaVuSans.ttf', '/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf'],
+        ];
+        $fontReg = ''; $fontBold = '';
+        foreach ($fontPairs as [$reg, $bold]) {
+            if (is_file($reg) && is_file($bold)) { $fontReg = $reg; $fontBold = $bold; break; }
+        }
+        $hasTtf = $fontReg !== '';
 
         $text = function (int $x, int $y, string $str, $color, int $size = 13, bool $bold = false) use ($im, $hasTtf, $fontReg, $fontBold) {
             if ($hasTtf) {

@@ -68,7 +68,14 @@ if (!function_exists('pensi_load_hmac_secret')) {
         try {
             $dir = dirname($key_file);
             if (!is_dir($dir) || !is_writable($dir)) {
-                throw new RuntimeException('Direktori storage tidak dapat ditulis.');
+                // Portabel: fallback ke temp dir bila folder storage tidak writable.
+                $fallback = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'pensi_eventpro_secret.key';
+                error_log('[BARCODE_SECRET] storage tidak writable, memakai fallback: ' . $fallback);
+                $key_file = $fallback;
+                $dir = dirname($key_file);
+                if (!is_dir($dir) || !is_writable($dir)) {
+                    throw new RuntimeException('Tidak ada direktori writable untuk menyimpan secret.');
+                }
             }
 
             $new_secret = bin2hex(random_bytes(32));
@@ -97,13 +104,22 @@ if (!function_exists('pensi_load_hmac_secret')) {
 
 define('BARCODE_HMAC_SECRET', pensi_load_hmac_secret());
 
-$db_host    = getenv('DB_HOST') !== false ? getenv('DB_HOST') : 'localhost';
-$db_name    = getenv('DB_NAME') !== false ? getenv('DB_NAME') : 'db_tiket_event_pro';
-$db_user    = getenv('DB_USER') !== false ? getenv('DB_USER') : 'pensi_app';
-$db_pass    = getenv('DB_PASS') !== false ? getenv('DB_PASS') : 'PensiApp2026!Secure#Pass';
+// Konfigurasi portabel: config.local.php (dibuat installer) > environment > default XAMPP/Laragon.
+$localConfig = [];
+$localConfigFile = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config.local.php';
+if (is_file($localConfigFile)) {
+    $loaded = require $localConfigFile;
+    if (is_array($loaded)) $localConfig = $loaded;
+}
+
+$db_host    = getenv('DB_HOST') !== false ? getenv('DB_HOST') : ($localConfig['host'] ?? '127.0.0.1');
+$db_port    = getenv('DB_PORT') !== false ? (int)getenv('DB_PORT') : (int)($localConfig['port'] ?? 3306);
+$db_name    = getenv('DB_NAME') !== false ? getenv('DB_NAME') : ($localConfig['name'] ?? 'db_tiket_event_pro');
+$db_user    = getenv('DB_USER') !== false ? getenv('DB_USER') : ($localConfig['user'] ?? 'root');
+$db_pass    = getenv('DB_PASS') !== false ? getenv('DB_PASS') : ($localConfig['pass'] ?? '');
 $db_charset = 'utf8mb4';
 
-$dsn = "mysql:host={$db_host};dbname={$db_name};charset={$db_charset}";
+$dsn = "mysql:host={$db_host};port={$db_port};dbname={$db_name};charset={$db_charset}";
 $options = [
     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,

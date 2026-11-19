@@ -13,6 +13,6 @@ $footerUser = function_exists('current_user') ? current_user() : null;
     <span>&copy; <?= date('Y') ?> PENSI EVENTPRO — Aplikasi Pemesanan Tiket Event (PAKET 7)</span>
     <span>Palet wajib: #1E1B4B · #6D28D9 · #F97316 · #F8FAFC · #059669</span>
 </footer>
-<script src="/assets/js/ui.js" defer></script>
+<script src="<?= e(base_url('assets/js/ui.js')) ?>" defer></script>
 </body>
 </html>

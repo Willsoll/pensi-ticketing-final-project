@@ -53,3 +53,11 @@ vendor/
 *_backup/
 public_v3_backup/
 src_v3_backup/
+
+# secrets & runtime
+config.local.php
+storage/barcode_secret.key
+storage/installed.lock
+storage/logs/
+storage/cache/
+storage/uploads/

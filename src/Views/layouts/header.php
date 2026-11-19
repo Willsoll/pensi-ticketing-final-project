@@ -15,7 +15,7 @@ $activeNav = $activeNav ?? '';
 $themeParam = $_GET['theme'] ?? null;
 if (is_string($themeParam) && preg_match('/^(0[1-9]|10)$/', $themeParam)) {
     $pensi_theme = $themeParam;
-    if (!headers_sent()) setcookie('pensi_theme', $pensi_theme, time() + 31536000, '/');
+    if (!headers_sent()) setcookie('pensi_theme', $pensi_theme, time() + 31536000, base_path() ?: '/');
 } else {
     $pensi_theme = $_COOKIE['pensi_theme'] ?? '07';
     if (!preg_match('/^(0[1-9]|10)$/', (string)$pensi_theme)) $pensi_theme = '07';
@@ -54,10 +54,10 @@ function nav_icon(string $name): string
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/assets/css/design-system.css">
-    <link rel="stylesheet" href="/assets/css/themes/theme-<?= e($pensi_theme) ?>-<?= e($pensi_theme_file) ?>.css">
+    <link rel="stylesheet" href="<?= e(base_url('assets/css/design-system.css')) ?>">
+    <link rel="stylesheet" href="<?= e(base_url('assets/css/themes/theme-' . $pensi_theme . '-' . $pensi_theme_file . '.css')) ?>">
     <?php if ((int)$pensi_theme <= 5): ?>
-    <link rel="stylesheet" href="/assets/css/themes/_dark-fixes.css">
+    <link rel="stylesheet" href="<?= e(base_url('assets/css/themes/_dark-fixes.css')) ?>">
     <?php endif; ?>
     <style>
         .skip-link { position:absolute;left:-9999px;top:0;background:#F97316;color:#111827;padding:8px 14px;z-index:9999;border-radius:0 0 8px 0; }
@@ -71,7 +71,7 @@ function nav_icon(string $name): string
 <?php if ($user): ?>
 <div class="app-shell">
     <aside class="sidebar" id="sidebar" aria-label="Navigasi utama">
-        <a href="/index.php" class="sidebar-brand">
+        <a href="<?= e(base_url('index.php')) ?>" class="sidebar-brand">
             <span class="brand-mark">P</span>
             <span><strong>PENSI EVENTPRO</strong><small>Ticket Platform</small></span>
         </a>
@@ -90,7 +90,7 @@ function nav_icon(string $name): string
                     <small><?= e(label_role($user['role'])) ?></small>
                 </span>
             </div>
-            <a href="/logout.php" class="sidebar-logout">Keluar</a>
+            <a href="<?= e(base_url('logout.php')) ?>" class="sidebar-logout">Keluar</a>
         </div>
     </aside>
 
@@ -105,19 +105,19 @@ function nav_icon(string $name): string
                     <div class="topbar-title"><?= e($pageSubtitle) ?></div>
                 </div>
             </div>
-            <a href="/index.php" class="btn btn-ghost btn-sm">Katalog</a>
+            <a href="<?= e(base_url('index.php')) ?>" class="btn btn-ghost btn-sm">Katalog</a>
         </div>
         <main class="page-wrap" id="main">
 <?php else: ?>
 <header class="public-header">
     <div class="public-header-inner">
-        <a href="/index.php" class="public-brand">
+        <a href="<?= e(base_url('index.php')) ?>" class="public-brand">
             <span class="brand-mark">P</span>
             <span>PENSI EVENTPRO</span>
         </a>
         <nav class="public-nav" aria-label="Navigasi publik">
-            <a href="/index.php" class="<?= $activeNav === 'index.php' ? 'active' : '' ?>">Katalog Event</a>
-            <a href="/login.php" class="<?= $activeNav === 'login.php' ? 'active' : '' ?>">Login &amp; Registrasi</a>
+            <a href="<?= e(base_url('index.php')) ?>" class="<?= $activeNav === 'index.php' ? 'active' : '' ?>">Katalog Event</a>
+            <a href="<?= e(base_url('login.php')) ?>" class="<?= $activeNav === 'login.php' ? 'active' : '' ?>">Login &amp; Registrasi</a>
         </nav>
     </div>
 </header>
