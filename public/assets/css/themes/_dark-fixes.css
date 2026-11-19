@@ -238,3 +238,55 @@ html[data-theme="05"] code {
     background: var(--color-bg-muted);
     color: var(--color-text-primary);
 }
+
+
+/* ===== Contrast round 2 (vision review fixes) ===== */
+html[data-theme="01"], html[data-theme="02"], html[data-theme="03"],
+html[data-theme="04"], html[data-theme="05"] {
+    --color-text-muted: #A9B4CC;
+    --color-text-secondary: #CBD5E1;
+    --shadow-sm: 0 2px 8px rgba(0,0,0,.45);
+    --shadow-md: 0 8px 22px rgba(0,0,0,.55);
+    --shadow-lg: 0 16px 38px rgba(0,0,0,.6);
+}
+
+/* Table headers: brighter than muted grey */
+html[data-theme="01"] .table th, html[data-theme="02"] .table th,
+html[data-theme="03"] .table th, html[data-theme="04"] .table th,
+html[data-theme="05"] .table th {
+    color: #E2E8F0 !important;
+    background: rgba(255,255,255,.07) !important;
+}
+/* Visible row dividers */
+html[data-theme="01"] .table td, html[data-theme="02"] .table td,
+html[data-theme="03"] .table td, html[data-theme="04"] .table td,
+html[data-theme="05"] .table td {
+    border-bottom: 1px solid rgba(255,255,255,.14) !important;
+}
+
+/* Primary buttons must never be dark-on-dark */
+html[data-theme="01"] .btn-primary, html[data-theme="02"] .btn-primary,
+html[data-theme="03"] .btn-primary, html[data-theme="04"] .btn-primary,
+html[data-theme="05"] .btn-primary {
+    background: #4338CA !important;
+    color: #FFFFFF !important;
+    border: 1px solid rgba(255,255,255,.22) !important;
+}
+html[data-theme="01"] .btn-primary:hover, html[data-theme="02"] .btn-primary:hover,
+html[data-theme="03"] .btn-primary:hover, html[data-theme="04"] .btn-primary:hover,
+html[data-theme="05"] .btn-primary:hover {
+    background: #4F46E5 !important;
+}
+
+/* Breadcrumb + small metadata */
+html[data-theme="01"] .breadcrumb, html[data-theme="02"] .breadcrumb,
+html[data-theme="03"] .breadcrumb, html[data-theme="04"] .breadcrumb,
+html[data-theme="05"] .breadcrumb,
+html[data-theme="01"] .breadcrumb a, html[data-theme="02"] .breadcrumb a,
+html[data-theme="03"] .breadcrumb a, html[data-theme="04"] .breadcrumb a,
+html[data-theme="05"] .breadcrumb a,
+html[data-theme="01"] small, html[data-theme="02"] small,
+html[data-theme="03"] small, html[data-theme="04"] small,
+html[data-theme="05"] small {
+    color: #A9B4CC !important;
+}
