@@ -5,7 +5,13 @@
  */
 declare(strict_types=1);
 
-$pdo = new PDO('mysql:host=127.0.0.1;dbname=db_tiket_event_pro;charset=utf8mb4', 'root', '', [
+$seedHost = getenv('DB_HOST') ?: '127.0.0.1';
+$seedPort = getenv('DB_PORT') ?: '3306';
+$seedName = getenv('DB_NAME') ?: 'db_tiket_event_pro';
+$seedUser = getenv('DB_USER') ?: 'root';
+$seedPass = getenv('DB_PASS') !== false ? getenv('DB_PASS') : '';
+
+$pdo = new PDO("mysql:host={$seedHost};port={$seedPort};dbname={$seedName};charset=utf8mb4", $seedUser, $seedPass, [
     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
 ]);

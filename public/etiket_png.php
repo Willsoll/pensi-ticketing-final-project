@@ -130,6 +130,7 @@ if (!function_exists('pensi_draw_eticket_image')) {
         imagesetthickness($im, 1);
 
         $fontPairs = [
+            [__DIR__ . '/assets/fonts/Lato-Regular.ttf', __DIR__ . '/assets/fonts/Lato-Bold.ttf'],
             [__DIR__ . '/assets/fonts/arial.ttf', __DIR__ . '/assets/fonts/arialbd.ttf'],
             ['C:/Windows/Fonts/arial.ttf', 'C:/Windows/Fonts/arialbd.ttf'],
             ['C:/Windows/Fonts/segoeui.ttf', 'C:/Windows/Fonts/segoeuib.ttf'],
