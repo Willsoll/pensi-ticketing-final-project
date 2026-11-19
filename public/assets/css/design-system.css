@@ -603,7 +603,10 @@ a:hover {
 
 /* ===== TABLES ===== */
 .table-container {
+  display: block;
+  max-width: 100%;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   border-radius: var(--radius-lg);
   border: 1px solid var(--color-border-light);
 }
@@ -1579,4 +1582,33 @@ a:hover {
   .btn { border: 2px solid currentColor; }
   .form-input, .form-select, .form-textarea { border-width: 2px; }
   .card { border-width: 2px; }
+}
+
+/* ===== RESPONSIVE SAFETY (added) ===== */
+@media (max-width: 900px) {
+  .main { padding: var(--space-5) var(--space-4); }
+  .header-inner { gap: var(--space-3); }
+  .header-nav { width: 100%; }
+}
+@media (max-width: 640px) {
+  h1 { font-size: var(--text-2xl); }
+  h2 { font-size: var(--text-xl); }
+  .card-body { padding: var(--space-4); }
+  .btn { width: auto; }
+  .stat-card-value { font-size: var(--text-2xl); }
+}
+
+
+/* ===== COMPACT TABLES + SCROLL AFFORDANCE ON NARROW SCREENS ===== */
+@media (max-width: 900px) {
+  .table th, .table td { padding: var(--space-2) var(--space-2); font-size: var(--text-xs); }
+  .table-container { position: relative; }
+  .table-container::after {
+    content: "← geser tabel untuk melihat kolom lain →";
+    display: block;
+    text-align: center;
+    font-size: 11px;
+    color: var(--color-text-muted);
+    padding: var(--space-1) 0 var(--space-2);
+  }
 }
