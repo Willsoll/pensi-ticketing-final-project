@@ -12,8 +12,14 @@ $pageTitle = $pageTitle ?? 'PENSI EVENTPRO';
 $pageSubtitle = $pageSubtitle ?? 'Multi-Event & Seat/Quota Ticketing Platform';
 $activeNav = $activeNav ?? '';
 
-$pensi_theme = $_COOKIE['pensi_theme'] ?? '07';
-if (!preg_match('/^(0[1-9]|10)$/', (string)$pensi_theme)) $pensi_theme = '07';
+$themeParam = $_GET['theme'] ?? null;
+if (is_string($themeParam) && preg_match('/^(0[1-9]|10)$/', $themeParam)) {
+    $pensi_theme = $themeParam;
+    if (!headers_sent()) setcookie('pensi_theme', $pensi_theme, time() + 31536000, '/');
+} else {
+    $pensi_theme = $_COOKIE['pensi_theme'] ?? '07';
+    if (!preg_match('/^(0[1-9]|10)$/', (string)$pensi_theme)) $pensi_theme = '07';
+}
 $themeFiles = [
     '01' => 'midnight-aurora', '02' => 'obsidian-split', '03' => 'cyber-grid',
     '04' => 'deep-space', '05' => 'carbon-neon', '06' => 'paper-minimal',
