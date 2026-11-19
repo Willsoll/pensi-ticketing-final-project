@@ -3,8 +3,8 @@
  * dashboard_peserta.php - Dashboard Peserta: Daftar Pesanan & Cetak E-Ticket
  * Hanya role pembeli, milik user sendiri
  */
-require_once __DIR__ . '/config/database.php';
-require_once __DIR__ . '/config/middleware.php';
+require_once __DIR__ . '/../src/Config/database.php';
+require_once __DIR__ . '/../src/Middleware/middleware.php';
 
 require_role(['pembeli']);
 release_expired_transactions($pdo);
@@ -25,7 +25,7 @@ $stmt->execute([(int)$user['id_user']]);
 $pesanan_list = $stmt->fetchAll();
 
 $page_title = 'Dashboard Peserta & E-Ticket - Pensi School';
-require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/../src/Views/layouts/header.php';
 ?>
 
 <div class="breadcrumb">
@@ -113,4 +113,4 @@ require_once __DIR__ . '/includes/header.php';
     </ul>
 </div>
 
-<?php require_once __DIR__ . '/includes/footer.php'; ?>
+<?php require_once __DIR__ . '/../src/Views/layouts/footer.php'; ?>

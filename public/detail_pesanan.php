@@ -3,8 +3,8 @@
  * detail_pesanan.php - Detail Pesanan (View Only)
  * Bisa diakses pembeli (milik sendiri) & panitia (semua)
  */
-require_once __DIR__ . '/config/database.php';
-require_once __DIR__ . '/config/middleware.php';
+require_once __DIR__ . '/../src/Config/database.php';
+require_once __DIR__ . '/../src/Middleware/middleware.php';
 
 require_login();
 release_expired_transactions($pdo);
@@ -58,7 +58,7 @@ $stmtDet->execute([(int)$pesanan['id_pesan']]);
 $detail_tiket = $stmtDet->fetchAll();
 
 $page_title = 'Detail Pesanan - ' . $kode_transaksi;
-require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/../src/Views/layouts/header.php';
 ?>
 
 <div class="breadcrumb">
@@ -207,4 +207,4 @@ require_once __DIR__ . '/includes/header.php';
     </a>
 </div>
 
-<?php require_once __DIR__ . '/includes/footer.php'; ?>
+<?php require_once __DIR__ . '/../src/Views/layouts/footer.php'; ?>

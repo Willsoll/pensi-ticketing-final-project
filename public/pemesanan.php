@@ -10,8 +10,8 @@
  * - Identitas (NIS/NIK) unik secara global untuk tiket aktif (anti-calo).
  * - Harga, stok, kursi, dan promo divalidasi ulang dengan row lock (anti race condition).
  */
-require_once __DIR__ . '/config/database.php';
-require_once __DIR__ . '/config/middleware.php';
+require_once __DIR__ . '/../src/Config/database.php';
+require_once __DIR__ . '/../src/Middleware/middleware.php';
 
 require_role(['pembeli']);
 release_expired_transactions($pdo);
@@ -390,7 +390,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aksi'] ?? '') === 'buat_pe
 }
 
 $page_title = 'Identity Binding & Kode Promo - ' . $jenis['nama_jenis'];
-require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/../src/Views/layouts/header.php';
 ?>
 
 <div class="breadcrumb">
@@ -541,4 +541,4 @@ function validasiIdentityBinding() {
 }
 </script>
 
-<?php require_once __DIR__ . '/includes/footer.php'; ?>
+<?php require_once __DIR__ . '/../src/Views/layouts/footer.php'; ?>

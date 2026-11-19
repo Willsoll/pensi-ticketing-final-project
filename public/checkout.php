@@ -3,8 +3,8 @@
  * checkout.php - Checkout dengan Live Countdown Timer 15 Menit & Upload Bukti Bayar
  * Hanya role pembeli, milik user sendiri
  */
-require_once __DIR__ . '/config/database.php';
-require_once __DIR__ . '/config/middleware.php';
+require_once __DIR__ . '/../src/Config/database.php';
+require_once __DIR__ . '/../src/Middleware/middleware.php';
 
 require_role(['pembeli']);
 release_expired_transactions($pdo);
@@ -404,7 +404,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aksi'] ?? '') === 'upload_
 $batas_ms = strtotime($pesanan['batas_waktu_bayar']) * 1000;
 
 $page_title = 'Checkout & Pembayaran - ' . $kode_transaksi;
-require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/../src/Views/layouts/header.php';
 ?>
 
 <div class="breadcrumb">
@@ -612,4 +612,4 @@ require_once __DIR__ . '/includes/header.php';
 })();
 </script>
 
-<?php require_once __DIR__ . '/includes/footer.php'; ?>
+<?php require_once __DIR__ . '/../src/Views/layouts/footer.php'; ?>

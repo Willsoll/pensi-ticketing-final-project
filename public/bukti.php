@@ -6,8 +6,8 @@
  * Pembeli hanya dapat melihat bukti miliknya sendiri; Panitia Keuangan dan
  * Admin OSIS dapat melihat seluruh bukti untuk proses verifikasi.
  */
-require_once __DIR__ . '/config/database.php';
-require_once __DIR__ . '/config/middleware.php';
+require_once __DIR__ . '/../src/Config/database.php';
+require_once __DIR__ . '/../src/Middleware/middleware.php';
 
 require_login();
 
@@ -46,7 +46,7 @@ if (!preg_match('#^uploads/bukti/[A-Za-z0-9._-]+$#', $rel_path)) {
     exit;
 }
 
-$base_dir = realpath(__DIR__ . '/uploads/bukti');
+$base_dir = realpath(__DIR__ . '/../uploads/bukti');
 $file_path = realpath(__DIR__ . '/' . $rel_path);
 if ($base_dir === false || $file_path === false || !is_file($file_path)) {
     http_response_code(404);

@@ -4,8 +4,8 @@
  * Hanya bisa diakses jika status_bayar = 'Lunas'
  * Menampilkan barcode SVG + data peserta
  */
-require_once __DIR__ . '/config/database.php';
-require_once __DIR__ . '/config/middleware.php';
+require_once __DIR__ . '/../src/Config/database.php';
+require_once __DIR__ . '/../src/Middleware/middleware.php';
 
 require_login();
 $user = current_user();

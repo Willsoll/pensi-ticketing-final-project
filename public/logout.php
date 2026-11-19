@@ -2,8 +2,8 @@
 /**
  * logout.php - Keluar dari sesi (dilindungi CSRF token)
  */
-require_once __DIR__ . '/config/database.php';
-require_once __DIR__ . '/config/middleware.php';
+require_once __DIR__ . '/../src/Config/database.php';
+require_once __DIR__ . '/../src/Middleware/middleware.php';
 
 // Guest: langsung arahkan ke halaman login.
 if (!is_logged_in()) {

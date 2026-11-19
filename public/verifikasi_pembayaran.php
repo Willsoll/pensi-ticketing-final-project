@@ -4,8 +4,8 @@
  * Tinjau bukti transfer, ubah status Lunas/Ditolak (auto-return kuota jika Ditolak)
  * Hanya role panitia_keuangan
  */
-require_once __DIR__ . '/config/database.php';
-require_once __DIR__ . '/config/middleware.php';
+require_once __DIR__ . '/../src/Config/database.php';
+require_once __DIR__ . '/../src/Middleware/middleware.php';
 
 require_role(['panitia_keuangan', 'admin_osis']);
 release_expired_transactions($pdo);
@@ -171,7 +171,7 @@ $stmtList->execute($params);
 $pesanan_list = $stmtList->fetchAll();
 
 $page_title = 'Verifikasi Pembayaran - Panitia Keuangan';
-require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/../src/Views/layouts/header.php';
 ?>
 
 <div class="breadcrumb">
@@ -292,4 +292,4 @@ require_once __DIR__ . '/includes/header.php';
     </table>
 </div>
 
-<?php require_once __DIR__ . '/includes/footer.php'; ?>
+<?php require_once __DIR__ . '/../src/Views/layouts/footer.php'; ?>

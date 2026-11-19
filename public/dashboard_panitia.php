@@ -4,8 +4,8 @@
  * Role: admin_osis (full), panitia_keuangan (view only)
  * Statistik: tiket terjual per segmentasi, total pemasukan, kuota tersisa, check-in stats
  */
-require_once __DIR__ . '/config/database.php';
-require_once __DIR__ . '/config/middleware.php';
+require_once __DIR__ . '/../src/Config/database.php';
+require_once __DIR__ . '/../src/Middleware/middleware.php';
 
 require_role(['admin_osis', 'panitia_keuangan']);
 release_expired_transactions($pdo);
@@ -74,7 +74,7 @@ $stmtRecent = $pdo->query("
 $recent_orders = $stmtRecent->fetchAll();
 
 $page_title = 'Dashboard Panitia OSIS & Keuangan - Pensi School';
-require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/../src/Views/layouts/header.php';
 ?>
 
 <div class="breadcrumb">
@@ -287,4 +287,4 @@ require_once __DIR__ . '/includes/header.php';
     </table>
 </div>
 
-<?php require_once __DIR__ . '/includes/footer.php'; ?>
+<?php require_once __DIR__ . '/../src/Views/layouts/footer.php'; ?>

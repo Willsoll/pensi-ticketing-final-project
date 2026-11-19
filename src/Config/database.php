@@ -48,7 +48,7 @@ if (!function_exists('pensi_load_hmac_secret')) {
             error_log('[BARCODE_SECRET] BARCODE_HMAC_SECRET diabaikan karena kurang dari 32 karakter.');
         }
 
-        $key_file = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'barcode_secret.key';
+        $key_file = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'barcode_secret.key';
 
         if (is_file($key_file)) {
             // Retry singkat untuk mengantisipasi proses lain yang baru membuat file.

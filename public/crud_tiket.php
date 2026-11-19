@@ -3,8 +3,8 @@
  * crud_tiket.php - CRUD Master: Jenis Tiket, Rundown Acara, Kode Promo
  * Hanya role admin_osis
  */
-require_once __DIR__ . '/config/database.php';
-require_once __DIR__ . '/config/middleware.php';
+require_once __DIR__ . '/../src/Config/database.php';
+require_once __DIR__ . '/../src/Middleware/middleware.php';
 
 require_role(['admin_osis']);
 release_expired_transactions($pdo);
@@ -352,7 +352,7 @@ try {
 }
 
 $page_title = 'CRUD Master Data - Admin OSIS';
-require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/../src/Views/layouts/header.php';
 ?>
 
 <div class="breadcrumb">
@@ -737,4 +737,4 @@ document.querySelectorAll('.modal').forEach(modal => {
 });
 </script>
 
-<?php require_once __DIR__ . '/includes/footer.php'; ?>
+<?php require_once __DIR__ . '/../src/Views/layouts/footer.php'; ?>

@@ -3,9 +3,10 @@
  * login.php - Login & Registrasi Multi-Role dengan Validasi NIS/NIK
  * Role: pembeli, panitia_keuangan, petugas_gate, admin_osis
  * Registrasi hanya untuk role 'pembeli' (customer)
+ * Redesigned with Pensi Design System v1.0
  */
-require_once __DIR__ . '/config/database.php';
-require_once __DIR__ . '/config/middleware.php';
+require_once __DIR__ . '/../src/Config/database.php';
+require_once __DIR__ . '/../src/Middleware/middleware.php';
 
 // Redirect jika sudah login
 if (is_logged_in()) {
@@ -236,62 +237,62 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $page_title = 'Login & Registrasi Multi-Role - Pensi School';
-require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/../src/Views/layouts/header.php';
 ?>
 
 <div class="breadcrumb">
     <a href="index.php">Katalog Acara</a> > Login & Registrasi
 </div>
 
-<h2 style="color: #4F46E5; margin-bottom: 8px;">Login & Registrasi Multi-Role</h2>
-<p style="margin-bottom: 24px; color: #6B7280;">
-    Autentikasi terpisah untuk <strong>Pembeli (Peserta)</strong>, <strong>Admin OSIS</strong>, 
-    <strong>Panitia Keuangan</strong>, dan <strong>Petugas Gate</strong>.
-    Registrasi akun baru hanya untuk role <strong>Pembeli</strong>.
-</p>
+<div class="grid grid-cols-1 grid-cols-2" style="gap: var(--space-8); align-items: start;">
 
-<table style="border: none;">
-    <tr valign="top">
-        <!-- LOGIN FORM -->
-        <td style="width: 48%; border: none; padding-right: 16px;">
+    <!-- LOGIN FORM -->
+    <div class="card card-elevated">
+        <div class="card-header">
+            <h3 class="card-title">Masuk ke Akun Anda</h3>
+        </div>
+        <div class="card-body">
             <?php if ($login_error !== ''): ?>
-                <div class="flash ERROR"><?= e($login_error) ?></div>
+                <div class="alert alert-error" role="alert">
+                    <div class="alert-icon">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>
+                    </div>
+                    <div class="alert-content">
+                        <div class="alert-message"><?= e($login_error) ?></div>
+                    </div>
+                </div>
             <?php endif; ?>
 
-            <form method="POST" action="login.php" onsubmit="return validasiLogin();" novalidate>
+            <form method="POST" action="login.php" novalidate>
                 <input type="hidden" name="csrf_token" value="<?= e(generate_csrf_token()) ?>">
                 <input type="hidden" name="form_type" value="login">
 
-                <div class="card">
-                    <div class="card-header">
-                        <h3 style="margin: 0;">1. Form Login Multi-Role</h3>
-                    </div>
-                    
-                    <table style="border: none;">
-                        <tr>
-                            <td style="width: 160px; border: none;"><label for="login_identifier"><strong>Username / Email / NIS / NIK *</strong></label></td>
-                            <td style="border: none;"><input type="text" id="login_identifier" name="identifier" value="<?= e($login_identifier) ?>" required size="30" autocomplete="username"></td>
-                        </tr>
-                        <tr>
-                            <td style="border: none;"><label for="login_pass"><strong>Password *</strong></label></td>
-                            <td style="border: none;"><input type="password" id="login_pass" name="password" required size="30" autocomplete="current-password"></td>
-                        </tr>
-                        <tr>
-                            <td style="border: none;"></td>
-                            <td style="border: none;"><button type="submit"><strong>MASUK (LOGIN)</strong></button></td>
-                        </tr>
-                    </table>
+                <div class="form-group">
+                    <label for="login_identifier" class="form-label">Username / Email / NIS / NIK *</label>
+                    <input type="text" id="login_identifier" name="identifier" class="form-input" value="<?= e($login_identifier) ?>" required autocomplete="username" placeholder="Masukkan identifier Anda">
                 </div>
+
+                <div class="form-group">
+                    <label for="login_pass" class="form-label">Password *</label>
+                    <input type="password" id="login_pass" name="password" class="form-input" required autocomplete="current-password" placeholder="Masukkan password">
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: var(--space-4); font-size: var(--text-base);">
+                    <strong>MASUK</strong>
+                </button>
             </form>
+        </div>
+    </div>
 
-            <br>
-
-            <!-- AKUN UJI COBA -->
-            <div class="card">
-                <div class="card-header">
-                    <h3 style="margin: 0;">🔐 Akun Uji Coba Multi-Role (Password: <code>password123</code>)</h3>
-                </div>
-                <table>
+    <!-- AKUN UJI COBA -->
+    <div class="card" style="margin-top: var(--space-6); border-color: var(--color-primary); background: var(--color-primary-bg);">
+        <div class="card-header">
+            <h4 class="card-title" style="color: var(--color-primary); margin: 0;">Akun Uji Coba Multi-Role</h4>
+            <small style="color: var(--color-text-muted);">Password: <code>password123</code></small>
+        </div>
+        <div class="card-body">
+            <div class="table-container">
+                <table class="table">
                     <thead>
                         <tr>
                             <th>Role</th>
@@ -301,120 +302,124 @@ require_once __DIR__ . '/includes/header.php';
                     </thead>
                     <tbody>
                         <tr>
-                            <td><span class="badge badge-available">Admin OSIS</span></td>
+                            <td><span class="badge badge-success">Admin OSIS</span></td>
                             <td><code>admin_osis</code></td>
                             <td>Internal (NIS)</td>
                         </tr>
                         <tr>
-                            <td><span class="badge badge-available">Panitia Keuangan</span></td>
+                            <td><span class="badge badge-info">Panitia Keuangan</span></td>
                             <td><code>panitia_keu</code></td>
                             <td>Internal (NIS)</td>
                         </tr>
                         <tr>
-                            <td><span class="badge badge-available">Petugas Gate</span></td>
+                            <td><span class="badge badge-primary">Petugas Gate</span></td>
                             <td><code>petugas_gate</code></td>
                             <td>Internal (NIS)</td>
                         </tr>
                         <tr>
-                            <td><span class="badge badge-belum-masuk">Pembeli - Siswa Internal</span></td>
+                            <td><span class="badge badge-warning">Pembeli - Siswa Internal</span></td>
                             <td><code>dewi_siswa</code> / <code>2024001</code></td>
                             <td>Internal (NIS)</td>
                         </tr>
                         <tr>
-                            <td><span class="badge badge-belum-masuk">Pembeli - Alumni Eksternal</span></td>
+                            <td><span class="badge badge-warning">Pembeli - Alumni Eksternal</span></td>
                             <td><code>rizki_alumni</code> / <code>3273011005990001</code></td>
                             <td>Eksternal (NIK)</td>
                         </tr>
                         <tr>
-                            <td><span class="badge badge-belum-masuk">Pembeli - Tamu Umum</span></td>
+                            <td><span class="badge badge-warning">Pembeli - Tamu Umum</span></td>
                             <td><code>maya_tamu</code> / <code>3273021808000002</code></td>
                             <td>Eksternal (NIK)</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
-        </td>
+        </div>
+    </div>
 
-        <!-- REGISTRASI FORM -->
-        <td style="width: 52%; border: none; padding-left: 16px;">
+    <!-- REGISTRASI FORM -->
+    <div class="card card-elevated">
+        <div class="card-header">
+            <h3 class="card-title">Daftar sebagai Pembeli Baru</h3>
+        </div>
+        <div class="card-body">
             <?php if (!empty($reg_errors)): ?>
-                <div class="flash ERROR">
-                    <strong>Periksa Data Registrasi:</strong>
-                    <ul style="margin: 8px 0 0 20px;">
-                        <?php foreach ($reg_errors as $err): ?>
-                            <li><?= e($err) ?></li>
-                        <?php endforeach; ?>
-                    </ul>
+                <div class="alert alert-error" role="alert">
+                    <div class="alert-icon">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>
+                    </div>
+                    <div class="alert-content">
+                        <div class="alert-title">Periksa Data Registrasi:</div>
+                        <ul style="margin: var(--space-2) 0 0 var(--space-5);">
+                            <?php foreach ($reg_errors as $err): ?>
+                                <li><?= e($err) ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
                 </div>
             <?php endif; ?>
 
-            <form method="POST" action="login.php" onsubmit="return validasiRegistrasi();" novalidate>
+            <form method="POST" action="login.php" novalidate>
                 <input type="hidden" name="csrf_token" value="<?= e(generate_csrf_token()) ?>">
                 <input type="hidden" name="form_type" value="register">
 
-                <div class="card">
-                    <div class="card-header">
-                        <h3 style="margin: 0;">2. Registrasi Akun Pembeli Baru</h3>
-                    </div>
-
-                    <table style="border: none;">
-                        <tr>
-                            <td style="width: 180px; border: none;"><label for="reg_tipe"><strong>Tipe Pengguna *</strong></label></td>
-                            <td style="border: none;">
-                                <select id="reg_tipe" name="tipe_pengguna" required onchange="updateIdentifierLabel()">
-                                    <option value="Internal" <?= $reg_old['tipe_pengguna'] === 'Internal' ? 'selected' : '' ?>>Siswa Internal (NIS)</option>
-                                    <option value="Eksternal" <?= $reg_old['tipe_pengguna'] === 'Eksternal' ? 'selected' : '' ?>>Tamu Eksternal / Alumni (NIK KTP)</option>
-                                </select>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="border: none;"><label for="reg_nis_nik"><strong id="nis_nik_label">NIS (5-20 Digit Angka) *</strong></label></td>
-                            <td style="border: none;">
-                                <input type="text" id="reg_nis_nik" name="nis_atau_nik" value="<?= e($reg_old['nis_atau_nik']) ?>" 
-                                       required pattern="[0-9]{5,20}" maxlength="20" size="30" autocomplete="off">
-                                <br><small id="nis_nik_hint">Contoh NIS: 2024001</small>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="border: none;"><label for="reg_nama"><strong>Nama Lengkap *</strong></label></td>
-                            <td style="border: none;"><input type="text" id="reg_nama" name="nama" value="<?= e($reg_old['nama']) ?>" required minlength="3" maxlength="100" size="35"></td>
-                        </tr>
-                        <tr>
-                            <td style="border: none;"><label for="reg_kelas"><strong>Kelas / Instansi *</strong></label></td>
-                            <td style="border: none;">
-                                <input type="text" id="reg_kelas" name="kelas_atau_instansi" value="<?= e($reg_old['kelas_atau_instansi']) ?>" required maxlength="100" size="35" placeholder="Contoh: Kelas 10 IPA 1 / Universitas Indonesia / PT. Maju Jaya">
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="border: none;"><label for="reg_username"><strong>Username *</strong></label></td>
-                            <td style="border: none;"><input type="text" id="reg_username" name="username" value="<?= e($reg_old['username']) ?>" required pattern="[a-zA-Z0-9_]{4,30}" maxlength="30" size="30" autocomplete="username"></td>
-                        </tr>
-                        <tr>
-                            <td style="border: none;"><label for="reg_email"><strong>Email *</strong></label></td>
-                            <td style="border: none;"><input type="email" id="reg_email" name="email" value="<?= e($reg_old['email']) ?>" required size="35" autocomplete="email"></td>
-                        </tr>
-                        <tr>
-                            <td style="border: none;"><label for="reg_hp"><strong>Nomor HP *</strong></label></td>
-                            <td style="border: none;"><input type="tel" id="reg_hp" name="no_hp" value="<?= e($reg_old['no_hp']) ?>" required pattern="(08|\+628)[0-9]{7,13}" size="25" autocomplete="tel" placeholder="08xxxxxxxxxx atau +628xxxxxxxxxx"></td>
-                        </tr>
-                        <tr>
-                            <td style="border: none;"><label for="reg_pass"><strong>Password *</strong></label></td>
-                            <td style="border: none;"><input type="password" id="reg_pass" name="password" required minlength="6" size="30" autocomplete="new-password"></td>
-                        </tr>
-                        <tr>
-                            <td style="border: none;"><label for="reg_konf"><strong>Ulangi Password *</strong></label></td>
-                            <td style="border: none;"><input type="password" id="reg_konf" name="password_konfirmasi" required minlength="6" size="30" autocomplete="new-password"></td>
-                        </tr>
-                        <tr>
-                            <td style="border: none;"></td>
-                            <td style="border: none;"><button type="submit"><strong>DAFTAR SEBAGAI PEMBELI</strong></button></td>
-                        </tr>
-                    </table>
+                <div class="form-group">
+                    <label for="reg_tipe" class="form-label">Tipe Pengguna *</label>
+                    <select id="reg_tipe" name="tipe_pengguna" class="form-select" required onchange="updateIdentifierLabel()">
+                        <option value="Internal" <?= $reg_old['tipe_pengguna'] === 'Internal' ? 'selected' : '' ?>>Siswa Internal (NIS)</option>
+                        <option value="Eksternal" <?= $reg_old['tipe_pengguna'] === 'Eksternal' ? 'selected' : '' ?>>Tamu Eksternal / Alumni (NIK KTP)</option>
+                    </select>
                 </div>
+
+                <div class="form-group">
+                    <label for="reg_nis_nik" class="form-label"><strong id="nis_nik_label">NIS (5-20 Digit Angka) *</strong></label>
+                    <input type="text" id="reg_nis_nik" name="nis_atau_nik" class="form-input" value="<?= e($reg_old['nis_atau_nik']) ?>" required pattern="[0-9]{5,20}" maxlength="20" autocomplete="off" placeholder="Contoh: 2024001">
+                    <div class="form-hint" id="nis_nik_hint">Contoh NIS: 2024001</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="reg_nama" class="form-label">Nama Lengkap *</label>
+                    <input type="text" id="reg_nama" name="nama" class="form-input" value="<?= e($reg_old['nama']) ?>" required minlength="3" maxlength="100" placeholder="Nama lengkap sesuai KTP/Kartu Pelajar">
+                </div>
+
+                <div class="form-group">
+                    <label for="reg_kelas" class="form-label">Kelas / Instansi *</label>
+                    <input type="text" id="reg_kelas" name="kelas_atau_instansi" class="form-input" value="<?= e($reg_old['kelas_atau_instansi']) ?>" required maxlength="100" placeholder="Contoh: Kelas 10 IPA 1 / Universitas Indonesia / PT. Maju Jaya">
+                </div>
+
+                <div class="form-group">
+                    <label for="reg_username" class="form-label">Username *</label>
+                    <input type="text" id="reg_username" name="username" class="form-input" value="<?= e($reg_old['username']) ?>" required pattern="[a-zA-Z0-9_]{4,30}" maxlength="30" autocomplete="username" placeholder="4-30 karakter (huruf, angka, underscore)">
+                </div>
+
+                <div class="form-group">
+                    <label for="reg_email" class="form-label">Email *</label>
+                    <input type="email" id="reg_email" name="email" class="form-input" value="<?= e($reg_old['email']) ?>" required autocomplete="email" placeholder="email@example.com">
+                </div>
+
+                <div class="form-group">
+                    <label for="reg_hp" class="form-label">Nomor HP *</label>
+                    <input type="tel" id="reg_hp" name="no_hp" class="form-input" value="<?= e($reg_old['no_hp']) ?>" required pattern="(08|\+628)[0-9]{7,13}" autocomplete="tel" placeholder="08xxxxxxxxxx atau +628xxxxxxxxxx">
+                </div>
+
+                <div class="form-group">
+                    <label for="reg_pass" class="form-label">Password *</label>
+                    <input type="password" id="reg_pass" name="password" class="form-input" required minlength="6" autocomplete="new-password" placeholder="Minimal 6 karakter">
+                </div>
+
+                <div class="form-group">
+                    <label for="reg_konf" class="form-label">Ulangi Password *</label>
+                    <input type="password" id="reg_konf" name="password_konfirmasi" class="form-input" required minlength="6" autocomplete="new-password" placeholder="Ulangi password">
+                </div>
+
+                <button type="submit" class="btn btn-cta" style="width: 100%; padding: var(--space-4); font-size: var(--text-base);">
+                    <strong>DAFTAR SEBAGAI PEMBELI</strong>
+                </button>
             </form>
-        </td>
-    </tr>
-</table>
+        </div>
+    </div>
+
+</div>
 
 <script>
 function updateIdentifierLabel() {
@@ -422,7 +427,7 @@ function updateIdentifierLabel() {
     var label = document.getElementById('nis_nik_label');
     var hint = document.getElementById('nis_nik_hint');
     var input = document.getElementById('reg_nis_nik');
-    
+
     if (tipe === 'Internal') {
         label.textContent = 'NIS (5-20 Digit Angka) *';
         hint.textContent = 'Contoh NIS: 2024001';
@@ -436,48 +441,6 @@ function updateIdentifierLabel() {
     }
     input.value = '';
 }
-
-function validasiLogin() {
-    var id = document.getElementById('login_identifier').value.trim();
-    var p = document.getElementById('login_pass').value;
-    if (id === '' || p === '') {
-        alert('Identifier dan password wajib diisi.');
-        return false;
-    }
-    return true;
-}
-
-function validasiRegistrasi() {
-    var tipe = document.getElementById('reg_tipe').value;
-    var nisnik = document.getElementById('reg_nis_nik').value.trim();
-    var nama = document.getElementById('reg_nama').value.trim();
-    var kelas = document.getElementById('reg_kelas').value.trim();
-    var username = document.getElementById('reg_username').value.trim();
-    var email = document.getElementById('reg_email').value.trim();
-    var hp = document.getElementById('reg_hp').value.trim().replace(/[\s\-]/g, '');
-    var pass = document.getElementById('reg_pass').value;
-    var konf = document.getElementById('reg_konf').value;
-
-    if (tipe === 'Internal') {
-        if (!/^[0-9]{5,20}$/.test(nisnik)) {
-            alert('NIS wajib 5-20 digit angka.');
-            return false;
-        }
-    } else {
-        if (!/^[0-9]{16}$/.test(nisnik)) {
-            alert('NIK KTP wajib tepat 16 digit angka.');
-            return false;
-        }
-    }
-    if (nama.length < 3) { alert('Nama lengkap minimal 3 karakter.'); return false; }
-    if (kelas.length < 2) { alert('Kelas/Instansi wajib diisi.'); return false; }
-    if (!/^[a-zA-Z0-9_]{4,30}$/.test(username)) { alert('Username 4-30 karakter (huruf, angka, underscore).'); return false; }
-    if (email.indexOf('@') === -1) { alert('Format email tidak valid.'); return false; }
-    if (!/^(08|\+628)[0-9]{7,13}$/.test(hp)) { alert('Nomor HP harus diawali 08 atau +628.'); return false; }
-    if (pass.length < 6) { alert('Password minimal 6 karakter.'); return false; }
-    if (pass !== konf) { alert('Konfirmasi password tidak cocok.'); return false; }
-    return true;
-}
 </script>
 
-<?php require_once __DIR__ . '/includes/footer.php'; ?>
+<?php require_once __DIR__ . '/../src/Views/layouts/footer.php'; ?>

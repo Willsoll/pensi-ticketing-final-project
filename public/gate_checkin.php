@@ -5,8 +5,8 @@
  * Anti-passback: cek status_bayar='Lunas' & status_checkin='Belum Masuk'
  * Scan kedua menampilkan peringatan merah "TIKET SUDAH DIGUNAKAN"
  */
-require_once __DIR__ . '/config/database.php';
-require_once __DIR__ . '/config/middleware.php';
+require_once __DIR__ . '/../src/Config/database.php';
+require_once __DIR__ . '/../src/Middleware/middleware.php';
 
 // RBAC: Check-in hanya petugas_gate & admin_osis
 // Audit log bisa diakses: petugas_gate, admin_osis, panitia_keuangan
@@ -171,7 +171,7 @@ $stmtLog->execute($paramsLog);
 $audit_logs = $stmtLog->fetchAll();
 
 $page_title = 'Gate Check-in & Audit Log - Pensi School';
-require_once __DIR__ . '/includes/header.php';
+require_once __DIR__ . '/../src/Views/layouts/header.php';
 ?>
 
 <div class="breadcrumb">
@@ -440,4 +440,4 @@ require_once __DIR__ . '/includes/header.php';
     </div>
 </div>
 
-<?php require_once __DIR__ . '/includes/footer.php'; ?>
+<?php require_once __DIR__ . '/../src/Views/layouts/footer.php'; ?>
