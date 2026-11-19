@@ -1,0 +1,136 @@
+/* ==========================================================================
+   PENSI EVENTPRO — ui-fixes.css
+   Loaded LAST, after the active theme and dark fixes, so accessibility rules
+   always win. Covers: visible borders, table grid, text inversion, forms.
+   ========================================================================== */
+
+/* ---- Card & surface borders ---- */
+html:not([data-theme="08"]) .card,
+html:not([data-theme="08"]) .card-elevated,
+html:not([data-theme="08"]) .stat-box,
+html:not([data-theme="08"]) .event-card,
+html:not([data-theme="08"]) .filter-bar,
+html:not([data-theme="08"]) .table-container,
+html:not([data-theme="08"]) .modal,
+html:not([data-theme="08"]) .alert {
+    border: 1.5px solid var(--color-border, #CBD5E1) !important;
+}
+html:not([data-theme="08"]) .card:hover,
+html:not([data-theme="08"]) .event-card:hover {
+    border-color: var(--color-border-strong, #94A3B8) !important;
+}
+
+/* ---- Tables: thin full grid (dyslexia-friendly) ---- */
+.table {
+    border-collapse: collapse !important;
+}
+.table th, .table td {
+    border: 1px solid var(--color-border, #CBD5E1) !important;
+    padding: 10px 12px !important;
+}
+.table thead th {
+    background: var(--color-bg-muted) !important;
+    border-bottom: 2px solid var(--color-border-strong, #94A3B8) !important;
+    color: var(--color-text-primary) !important;
+    font-weight: 700 !important;
+}
+[data-theme="01"] .table th, [data-theme="01"] .table td,
+[data-theme="02"] .table th, [data-theme="02"] .table td,
+[data-theme="03"] .table th, [data-theme="03"] .table td,
+[data-theme="04"] .table th, [data-theme="04"] .table td,
+[data-theme="05"] .table th, [data-theme="05"] .table td {
+    border-color: rgba(255, 255, 255, .24) !important;
+}
+[data-theme="01"] .table thead th, [data-theme="02"] .table thead th,
+[data-theme="03"] .table thead th, [data-theme="04"] .table thead th,
+[data-theme="05"] .table thead th {
+    background: rgba(255, 255, 255, .09) !important;
+    border-bottom-color: rgba(255, 255, 255, .42) !important;
+}
+
+/* ---- Accent text on dark surfaces ---- */
+[data-theme="01"] a, [data-theme="02"] a, [data-theme="03"] a,
+[data-theme="04"] a, [data-theme="05"] a,
+[data-theme="01"] .card-title, [data-theme="02"] .card-title, [data-theme="03"] .card-title,
+[data-theme="04"] .card-title, [data-theme="05"] .card-title,
+[data-theme="01"] .stat-box strong, [data-theme="02"] .stat-box strong,
+[data-theme="03"] .stat-box strong, [data-theme="04"] .stat-box strong,
+[data-theme="05"] .stat-box strong,
+[data-theme="01"] .form-label, [data-theme="02"] .form-label, [data-theme="03"] .form-label,
+[data-theme="04"] .form-label, [data-theme="05"] .form-label {
+    color: #C7D2FE !important;
+}
+[data-theme="01"] .btn-primary, [data-theme="02"] .btn-primary, [data-theme="03"] .btn-primary,
+[data-theme="04"] .btn-primary, [data-theme="05"] .btn-primary {
+    color: #FFFFFF !important;
+}
+
+/* ---- Chart labels & occupancy tracks ---- */
+.chart-label { color: var(--color-text-secondary, #475569) !important; font-weight: 600 !important; }
+[data-theme="01"] .chart-label, [data-theme="02"] .chart-label, [data-theme="03"] .chart-label,
+[data-theme="04"] .chart-label, [data-theme="05"] .chart-label { color: #C7D2FE !important; }
+.occupancy-row .bar {
+    border: 1px solid var(--color-border, #CBD5E1);
+    background: var(--color-bg-muted) !important;
+}
+
+/* ---- Form controls (custom, not native-looking) ---- */
+.form-control, .form-select, textarea.form-control {
+    min-height: 46px;
+    padding: 12px 14px;
+    border: 1.5px solid var(--color-border, #CBD5E1) !important;
+    border-radius: 12px !important;
+    background: var(--color-bg-card, #FFFFFF) !important;
+    color: var(--color-text-primary) !important;
+    font-size: 14px;
+    box-shadow: inset 0 1px 2px rgba(15, 23, 42, .05);
+}
+.form-select {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    padding-right: 42px !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236D28D9' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 14px center !important;
+}
+.form-control:focus, .form-select:focus, textarea.form-control:focus {
+    outline: none !important;
+    border-color: var(--color-accent, #6D28D9) !important;
+    box-shadow: 0 0 0 4px rgba(109, 40, 217, .16) !important;
+}
+[data-theme="01"] .form-control, [data-theme="02"] .form-control, [data-theme="03"] .form-control,
+[data-theme="04"] .form-control, [data-theme="05"] .form-control,
+[data-theme="01"] .form-select, [data-theme="02"] .form-select, [data-theme="03"] .form-select,
+[data-theme="04"] .form-select, [data-theme="05"] .form-select {
+    background: rgba(255, 255, 255, .07) !important;
+    border-color: rgba(255, 255, 255, .30) !important;
+    color: #F8FAFC !important;
+}
+[data-theme="01"] .form-control::placeholder, [data-theme="02"] .form-control::placeholder,
+[data-theme="03"] .form-control::placeholder, [data-theme="04"] .form-control::placeholder,
+[data-theme="05"] .form-control::placeholder { color: #A9B4CC !important; }
+
+/* ---- Upload zone ---- */
+.upload-zone {
+    border: 2px dashed var(--color-accent, #6D28D9) !important;
+    background: color-mix(in srgb, var(--color-accent, #6D28D9) 6%, var(--color-bg-card, #FFFFFF)) !important;
+}
+.upload-zone:hover, .upload-zone.is-dragover {
+    border-color: var(--color-cta, #F97316) !important;
+    box-shadow: 0 0 0 4px rgba(249, 115, 22, .14) !important;
+}
+
+/* ---- Code chips ---- */
+code, kbd, samp {
+    background: var(--color-bg-muted) !important;
+    border: 1px solid var(--color-border, #CBD5E1) !important;
+    border-radius: 6px;
+    padding: 1px 6px;
+    color: var(--color-text-primary) !important;
+}
+[data-theme="01"] code, [data-theme="02"] code, [data-theme="03"] code,
+[data-theme="04"] code, [data-theme="05"] code {
+    background: rgba(255, 255, 255, .10) !important;
+    border-color: rgba(255, 255, 255, .26) !important;
+    color: #E2E8F0 !important;
+}

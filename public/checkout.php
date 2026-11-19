@@ -369,8 +369,16 @@ require __DIR__ . '/../src/Views/layouts/header.php';
             <?= csrf_field() ?>
             <input type="hidden" name="aksi" value="upload_bukti">
             <div class="form-group" style="margin-bottom:12px;">
-                <label class="form-label">Bukti transfer (JPG/PNG/WEBP, maks 2MB)</label>
-                <input type="file" name="bukti" class="form-control" accept="image/jpeg,image/png,image/webp" required>
+                <label class="form-label" for="buktiInput">Bukti transfer</label>
+                <label class="upload-zone" data-upload-zone for="buktiInput">
+                    <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>
+                    </svg>
+                    <strong>Klik atau seret bukti transfer ke sini</strong>
+                    <small>JPG, PNG, atau WEBP &middot; maksimal 2 MB</small>
+                    <span class="upload-name" data-upload-name>Belum ada file dipilih</span>
+                    <input type="file" id="buktiInput" name="bukti" accept="image/jpeg,image/png,image/webp" required hidden>
+                </label>
             </div>
             <button type="submit" class="btn btn-primary">Unggah Bukti</button>
         </form>

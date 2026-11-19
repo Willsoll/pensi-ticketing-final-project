@@ -227,3 +227,52 @@
   if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', boot);
   else boot();
 })();
+
+/* ===== v5: upload zone (click, drag & drop, preview) ===== */
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-upload-zone]').forEach(function (zone) {
+        var input = zone.querySelector('input[type="file"]');
+        var nameEl = zone.querySelector('[data-upload-name]');
+        if (!input) return;
+
+        function render() {
+            var file = input.files && input.files[0];
+            if (!file) {
+                if (nameEl) nameEl.textContent = 'Belum ada file dipilih';
+                return;
+            }
+            var kb = Math.round(file.size / 1024);
+            if (nameEl) nameEl.textContent = file.name + ' · ' + kb + ' KB';
+            if (!file.type || file.type.indexOf('image/') !== 0) return;
+            var img = zone.querySelector('img.upload-preview');
+            if (!img) {
+                img = document.createElement('img');
+                img.className = 'upload-preview';
+                img.alt = 'Pratinjau bukti transfer';
+                zone.appendChild(img);
+            }
+            img.src = URL.createObjectURL(file);
+            img.hidden = false;
+        }
+
+        input.addEventListener('change', render);
+
+        ['dragenter', 'dragover'].forEach(function (ev) {
+            zone.addEventListener(ev, function (e) {
+                e.preventDefault();
+                zone.classList.add('is-dragover');
+            });
+        });
+        ['dragleave', 'dragend'].forEach(function (ev) {
+            zone.addEventListener(ev, function () { zone.classList.remove('is-dragover'); });
+        });
+        zone.addEventListener('drop', function (e) {
+            e.preventDefault();
+            zone.classList.remove('is-dragover');
+            if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+                input.files = e.dataTransfer.files;
+                render();
+            }
+        });
+    });
+});

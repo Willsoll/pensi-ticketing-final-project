@@ -197,14 +197,21 @@ require __DIR__ . '/../src/Views/layouts/header.php';
 
             <div class="form-group">
                 <label class="form-label">Email atau NIK <span style="color:var(--color-error);">*</span></label>
-                <input type="text" name="identifier" class="form-control" required
-                       placeholder="contoh: dewi@student.id atau 3273011005990001"
-                       autocomplete="username">
+                <div class="input-wrap">
+                    <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>
+                    <input type="text" name="identifier" class="form-control has-icon" required
+                           placeholder="contoh: dewi@student.id atau 3273011005990001"
+                           autocomplete="username">
+                </div>
             </div>
             <div class="form-group">
                 <label class="form-label">Password <span style="color:var(--color-error);">*</span></label>
-                <input type="password" name="password" class="form-control" required
-                       placeholder="Masukkan password" autocomplete="current-password">
+                <div class="input-wrap">
+                    <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+                    <input type="password" name="password" id="loginPass" class="form-control has-icon" required
+                           placeholder="Masukkan password" autocomplete="current-password">
+                    <button type="button" class="toggle-pass" onclick="togglePass('loginPass', this)">Lihat</button>
+                </div>
             </div>
             <button type="submit" class="btn btn-primary" style="width:100%;padding:var(--space-4);font-size:var(--text-base);">Masuk</button>
         </form>
@@ -257,30 +264,17 @@ require __DIR__ . '/../src/Views/layouts/header.php';
         </form>
     </div>
 
-    <!-- Akun demo -->
-    <div class="card" style="margin-top:var(--space-8);border-color:var(--color-primary);background:var(--color-primary-bg);">
-        <div class="card-header">
-            <h4 class="card-title" style="color:var(--color-primary);margin:0;">Akun Demo (password: password123)</h4>
-        </div>
-        <div class="card-body">
-            <div class="table-container">
-                <table class="table">
-                    <thead>
-                        <tr><th>Email</th><th>Role</th></tr>
-                    </thead>
-                    <tbody>
-                        <tr><td><code>admin.eo@eventpro.id</code></td><td><span class="badge badge-primary">admin_eo</span></td></tr>
-                        <tr><td><code>finance@eventpro.id</code></td><td><span class="badge badge-info">finance</span></td></tr>
-                        <tr><td><code>gate@eventpro.id</code></td><td><span class="badge badge-success">gate_officer</span></td></tr>
-                        <tr><td><code>dewi@student.id</code></td><td><span class="badge badge-warning">customer</span></td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+
 </div>
 
 <script>
+function togglePass(id, btn) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    var show = el.type === 'password';
+    el.type = show ? 'text' : 'password';
+    btn.textContent = show ? 'Sembunyi' : 'Lihat';
+}
 function showTab(name) {
     document.getElementById('panelLogin').style.display = name === 'login' ? 'block' : 'none';
     document.getElementById('panelRegister').style.display = name === 'register' ? 'block' : 'none';

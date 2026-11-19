@@ -290,3 +290,73 @@ html[data-theme="03"] small, html[data-theme="04"] small,
 html[data-theme="05"] small {
     color: #A9B4CC !important;
 }
+
+/* =======================================================================
+   v5 DARK MODE: stronger borders + consistent inverted text
+   ======================================================================= */
+html[data-theme="01"], html[data-theme="02"], html[data-theme="03"],
+html[data-theme="04"], html[data-theme="05"] {
+    --color-border: rgba(255,255,255,.26);
+    --color-border-strong: rgba(255,255,255,.44);
+    --color-border-light: rgba(255,255,255,.20);
+    --color-border-medium: rgba(255,255,255,.30);
+    --color-border-dark: rgba(255,255,255,.48);
+    --color-accent-text: #C7D2FE;
+    --color-surface: var(--color-bg-card);
+}
+
+/* Inline styles that hard-code the dark indigo as text colour */
+html[data-theme="01"] [style*="color:var(--color-primary)"],
+html[data-theme="02"] [style*="color:var(--color-primary)"],
+html[data-theme="03"] [style*="color:var(--color-primary)"],
+html[data-theme="04"] [style*="color:var(--color-primary)"],
+html[data-theme="05"] [style*="color:var(--color-primary)"],
+html[data-theme="01"] [style*="color: var(--color-primary)"],
+html[data-theme="02"] [style*="color: var(--color-primary)"],
+html[data-theme="03"] [style*="color: var(--color-primary)"],
+html[data-theme="04"] [style*="color: var(--color-primary)"],
+html[data-theme="05"] [style*="color: var(--color-primary)"] {
+    color: #C7D2FE !important;
+}
+
+/* Table grid lines must stay visible on dark surfaces */
+html[data-theme="01"] .table th, html[data-theme="01"] .table td,
+html[data-theme="02"] .table th, html[data-theme="02"] .table td,
+html[data-theme="03"] .table th, html[data-theme="03"] .table td,
+html[data-theme="04"] .table th, html[data-theme="04"] .table td,
+html[data-theme="05"] .table th, html[data-theme="05"] .table td {
+    border-color: rgba(255,255,255,.22) !important;
+}
+html[data-theme="01"] .table thead th, html[data-theme="02"] .table thead th,
+html[data-theme="03"] .table thead th, html[data-theme="04"] .table thead th,
+html[data-theme="05"] .table thead th {
+    border-bottom: 2px solid rgba(255,255,255,.40) !important;
+    background: rgba(255,255,255,.09) !important;
+    color: #F1F5F9 !important;
+}
+
+/* Inputs and upload zone */
+html[data-theme="01"] .form-control, html[data-theme="02"] .form-control,
+html[data-theme="03"] .form-control, html[data-theme="04"] .form-control,
+html[data-theme="05"] .form-control,
+html[data-theme="01"] .form-select, html[data-theme="02"] .form-select,
+html[data-theme="03"] .form-select, html[data-theme="04"] .form-select,
+html[data-theme="05"] .form-select,
+html[data-theme="01"] .upload-zone, html[data-theme="02"] .upload-zone,
+html[data-theme="03"] .upload-zone, html[data-theme="04"] .upload-zone,
+html[data-theme="05"] .upload-zone {
+    background: rgba(255,255,255,.06);
+    border-color: rgba(255,255,255,.28);
+    color: #F8FAFC;
+}
+html[data-theme="01"] .form-control::placeholder, html[data-theme="02"] .form-control::placeholder,
+html[data-theme="03"] .form-control::placeholder, html[data-theme="04"] .form-control::placeholder,
+html[data-theme="05"] .form-control::placeholder { color: #A9B4CC; }
+
+/* Code chips */
+html[data-theme="01"] code, html[data-theme="02"] code, html[data-theme="03"] code,
+html[data-theme="04"] code, html[data-theme="05"] code {
+    background: rgba(255,255,255,.10);
+    border-color: rgba(255,255,255,.25);
+    color: #E2E8F0;
+}
