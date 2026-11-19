@@ -95,8 +95,10 @@ $page_title = 'Cetak E-Ticket - ' . $kode_transaksi;
         .barcode-section img, .barcode-section svg { max-width: 100%; height: auto; }
         .footer-note { text-align: center; color: #6B7280; font-size: 0.75rem; border-top: 1px dashed #D1D5DB; padding-top: 12px; }
         .no-print { text-align: center; margin-top: 20px; }
-        .no-print button { background: #4F46E5; color: white; border: none; padding: 12px 28px; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; }
-        .no-print button:hover { background: #4338CA; }
+        .no-print button,
+        .no-print .btn { background: #4F46E5; color: white; border: none; padding: 12px 28px; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; }
+        .no-print button:hover,
+        .no-print .btn:hover { background: #4338CA; }
         .no-print a { display: inline-block; margin-top: 12px; color: #6B7280; text-decoration: none; }
         @media print { .no-print { display: none !important; } .etiket-card { box-shadow: none; border: 2px solid #111827; } }
     </style>
@@ -183,6 +185,12 @@ $page_title = 'Cetak E-Ticket - ' . $kode_transaksi;
 
     <div class="no-print">
         <button type="button" onclick="window.print();"><strong>🖨️ CETAK SEMUA E-TICKET (PRINT)</strong></button>
+        <br><br>
+        <a href="etiket_png.php?kode_transaksi=<?= urlencode($kode_transaksi) ?>" class="btn btn-primary">⬇️ Download JPG</a>
+        <a href="etiket_pdf.php?kode_transaksi=<?= urlencode($kode_transaksi) ?>" class="btn btn-primary">⬇️ Download PDF</a>
+        <?php if (count($detail_tiket) > 1): ?>
+            <br><br><small style="color:#6B7280;">Unduhan PDF mencakup semua halaman tiket dalam transaksi ini.</small>
+        <?php endif; ?>
         <br><br>
         <a href="dashboard_peserta.php">[ &larr; Kembali ke Dashboard Peserta ]</a>
     </div>

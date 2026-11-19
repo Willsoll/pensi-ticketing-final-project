@@ -1,0 +1,148 @@
+/*
+ * Theme: Obsidian Split
+ * Mode: dark
+ * Design intent: two-tone obsidian dark (#0B0F1A / #141B2D), sharp 8px radius
+ * Layout variation: left-aligned brand block, segmented-control nav, cards with purple top-border accent, squared buttons
+ */
+
+:root {
+  /* ROMBEL palette - dark overrides */
+  --color-primary: #1E1B4B;
+  --color-primary-light: #4338CA;
+  --color-primary-dark: #11103D;
+
+  --color-accent: #6D28D9;
+  --color-accent-light: #8B5CF6;
+  --color-accent-dark: #5B21B6;
+
+  --color-cta: #F97316;
+  --color-cta-light: #FB923C;
+  --color-cta-dark: #EA580C;
+
+  --color-header: #0B0F1A;
+  --color-header-light: #141B2D;
+
+  /* Two-tone dark surfaces */
+  --color-bg: #0B0F1A;
+  --color-bg-card: #141B2D;
+  --color-bg-muted: #1E2A40;
+
+  /* Semantic status colors */
+  --color-success: #10B981;
+  --color-success-light: #34D399;
+  --color-success-bg: #064E3B;
+  --color-success-border: #10B981;
+
+  --color-warning: #F59E0B;
+  --color-warning-light: #FBBF24;
+  --color-warning-bg: #451A03;
+  --color-warning-border: #F59E0B;
+
+  --color-error: #EF4444;
+  --color-error-light: #F87171;
+  --color-error-bg: #450A0A;
+  --color-error-border: #EF4444;
+
+  --color-info: #3B82F6;
+  --color-info-light: #60A5FA;
+  --color-info-bg: #1E3A5F;
+  --color-info-border: #3B82F6;
+
+  /* Text - light on dark */
+  --color-text-primary: #F8FAFC;
+  --color-text-secondary: #E5E7EB;
+  --color-text-muted: #9CA3AF;
+  --color-text-inverse: #FFFFFF;
+  --color-text-on-primary: #FFFFFF;
+  --color-text-on-cta: #FFFFFF;
+
+  /* Borders - obsidian separators */
+  --color-border-light: #1F2937;
+  --color-border-medium: #374151;
+  --color-border-dark: #4B5563;
+  --color-border-focus: #6D28D9;
+
+  /* Radius - sharp 8px */
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 8px;
+  --radius-full: 8px;
+
+  /* Shadows - crisp dark */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6);
+  --shadow-xl: 0 12px 32px rgba(0, 0, 0, 0.65);
+  --shadow-primary: 0 4px 14px rgba(30, 27, 75, 0.35);
+  --shadow-cta: 0 4px 14px rgba(249, 115, 22, 0.35);
+}
+
+/* Left-aligned brand block */
+.header-inner {
+  justify-content: flex-start;
+  gap: var(--space-6);
+}
+.header-brand {
+  order: 1;
+  flex-shrink: 0;
+}
+.header-nav {
+  order: 2;
+  margin-left: auto;
+}
+.header-user {
+  order: 3;
+}
+
+/* Segmented control nav */
+.header-nav {
+  display: inline-flex;
+  background: #0B0F1A;
+  border: 1px solid var(--color-border-medium);
+  border-radius: var(--radius-lg);
+  padding: 2px;
+  gap: 2px;
+}
+.header-nav-link {
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-muted);
+  border: 1px solid transparent;
+  padding: var(--space-2) var(--space-4);
+}
+.header-nav-link:hover {
+  background: var(--color-bg-muted);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-medium);
+}
+
+/* Cards with 1px purple top-border accent */
+.card {
+  border-top: 1px solid var(--color-accent);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+.card-header {
+  background: transparent;
+  border-bottom: none;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+.stat-card {
+  border-top: 1px solid var(--color-accent);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+/* Squared buttons (6px) */
+.btn {
+  border-radius: 6px;
+}
+.btn-primary, .btn-secondary, .btn-cta {
+  border-radius: 6px;
+}
+
+/* Focus visible keeps accessibility */
+:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}

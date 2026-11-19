@@ -1,0 +1,240 @@
+/* ============================================================
+   Pensi — Dark Theme Safety Layer
+   Loaded AFTER any dark theme (01–05) to guarantee readability.
+   Fixes: body surface, inline indigo headings, forms, tables,
+   breadcrumbs and secondary buttons on dark backgrounds.
+   ============================================================ */
+
+html[data-theme="01"] body,
+html[data-theme="02"] body,
+html[data-theme="03"] body,
+html[data-theme="04"] body,
+html[data-theme="05"] body {
+    background-color: var(--color-bg) !important;
+    background-image: var(--theme-body-bg-image, none);
+    color: var(--color-text-primary) !important;
+}
+
+/* Inline `style="color: var(--color-primary)"` on headings becomes unreadable
+   on dark surfaces — force light text with !important to beat the inline style. */
+html[data-theme="01"] h1, html[data-theme="01"] h2, html[data-theme="01"] h3,
+html[data-theme="01"] h4, html[data-theme="01"] h5, html[data-theme="01"] h6,
+html[data-theme="02"] h1, html[data-theme="02"] h2, html[data-theme="02"] h3,
+html[data-theme="02"] h4, html[data-theme="02"] h5, html[data-theme="02"] h6,
+html[data-theme="03"] h1, html[data-theme="03"] h2, html[data-theme="03"] h3,
+html[data-theme="03"] h4, html[data-theme="03"] h5, html[data-theme="03"] h6,
+html[data-theme="04"] h1, html[data-theme="04"] h2, html[data-theme="04"] h3,
+html[data-theme="04"] h4, html[data-theme="04"] h5, html[data-theme="04"] h6,
+html[data-theme="05"] h1, html[data-theme="05"] h2, html[data-theme="05"] h3,
+html[data-theme="05"] h4, html[data-theme="05"] h5, html[data-theme="05"] h6 {
+    color: var(--color-text-primary) !important;
+}
+
+html[data-theme="01"] .card-title,
+html[data-theme="02"] .card-title,
+html[data-theme="03"] .card-title,
+html[data-theme="04"] .card-title,
+html[data-theme="05"] .card-title {
+    color: var(--color-text-primary) !important;
+}
+
+/* Surfaces */
+html[data-theme="01"] .card,
+html[data-theme="02"] .card,
+html[data-theme="03"] .card,
+html[data-theme="04"] .card,
+html[data-theme="05"] .card,
+html[data-theme="01"] .stat-card,
+html[data-theme="02"] .stat-card,
+html[data-theme="03"] .stat-card,
+html[data-theme="04"] .stat-card,
+html[data-theme="05"] .stat-card {
+    background-color: var(--color-bg-card);
+    color: var(--color-text-primary);
+    border-color: var(--color-border-light);
+}
+
+html[data-theme="01"] .card-header,
+html[data-theme="02"] .card-header,
+html[data-theme="03"] .card-header,
+html[data-theme="04"] .card-header,
+html[data-theme="05"] .card-header,
+html[data-theme="01"] .card-footer,
+html[data-theme="02"] .card-footer,
+html[data-theme="03"] .card-footer,
+html[data-theme="04"] .card-footer,
+html[data-theme="05"] .card-footer {
+    background-color: var(--color-bg-muted);
+    border-color: var(--color-border-light);
+}
+
+/* Body copy inside cards */
+html[data-theme="01"] p,
+html[data-theme="02"] p,
+html[data-theme="03"] p,
+html[data-theme="04"] p,
+html[data-theme="05"] p,
+html[data-theme="01"] li,
+html[data-theme="02"] li,
+html[data-theme="03"] li,
+html[data-theme="04"] li,
+html[data-theme="05"] li {
+    color: var(--color-text-secondary);
+}
+
+/* Tables */
+html[data-theme="01"] .table th,
+html[data-theme="02"] .table th,
+html[data-theme="03"] .table th,
+html[data-theme="04"] .table th,
+html[data-theme="05"] .table th {
+    background: var(--color-bg-muted);
+    color: var(--color-text-secondary);
+    border-color: var(--color-border-light);
+}
+html[data-theme="01"] .table td,
+html[data-theme="02"] .table td,
+html[data-theme="03"] .table td,
+html[data-theme="04"] .table td,
+html[data-theme="05"] .table td {
+    color: var(--color-text-primary);
+    border-color: var(--color-border-light);
+}
+html[data-theme="01"] .table tbody tr:hover,
+html[data-theme="02"] .table tbody tr:hover,
+html[data-theme="03"] .table tbody tr:hover,
+html[data-theme="04"] .table tbody tr:hover,
+html[data-theme="05"] .table tbody tr:hover {
+    background: var(--color-bg-muted);
+}
+
+/* Forms */
+html[data-theme="01"] .form-input,
+html[data-theme="02"] .form-input,
+html[data-theme="03"] .form-input,
+html[data-theme="04"] .form-input,
+html[data-theme="05"] .form-input,
+html[data-theme="01"] .form-select,
+html[data-theme="02"] .form-select,
+html[data-theme="03"] .form-select,
+html[data-theme="04"] .form-select,
+html[data-theme="05"] .form-select,
+html[data-theme="01"] .form-textarea,
+html[data-theme="02"] .form-textarea,
+html[data-theme="03"] .form-textarea,
+html[data-theme="04"] .form-textarea,
+html[data-theme="05"] .form-textarea,
+html[data-theme="01"] input[type="text"],
+html[data-theme="02"] input[type="text"],
+html[data-theme="03"] input[type="text"],
+html[data-theme="04"] input[type="text"],
+html[data-theme="05"] input[type="text"],
+html[data-theme="01"] input[type="email"],
+html[data-theme="02"] input[type="email"],
+html[data-theme="03"] input[type="email"],
+html[data-theme="04"] input[type="email"],
+html[data-theme="05"] input[type="email"],
+html[data-theme="01"] input[type="password"],
+html[data-theme="02"] input[type="password"],
+html[data-theme="03"] input[type="password"],
+html[data-theme="04"] input[type="password"],
+html[data-theme="05"] input[type="password"],
+html[data-theme="01"] input[type="number"],
+html[data-theme="02"] input[type="number"],
+html[data-theme="03"] input[type="number"],
+html[data-theme="04"] input[type="number"],
+html[data-theme="05"] input[type="number"],
+html[data-theme="01"] input[type="tel"],
+html[data-theme="02"] input[type="tel"],
+html[data-theme="03"] input[type="tel"],
+html[data-theme="04"] input[type="tel"],
+html[data-theme="05"] input[type="tel"],
+html[data-theme="01"] select,
+html[data-theme="02"] select,
+html[data-theme="03"] select,
+html[data-theme="04"] select,
+html[data-theme="05"] select,
+html[data-theme="01"] textarea,
+html[data-theme="02"] textarea,
+html[data-theme="03"] textarea,
+html[data-theme="04"] textarea,
+html[data-theme="05"] textarea {
+    background-color: var(--color-bg-muted) !important;
+    color: var(--color-text-primary) !important;
+    border-color: var(--color-border-medium) !important;
+}
+
+html[data-theme="01"] .form-label,
+html[data-theme="02"] .form-label,
+html[data-theme="03"] .form-label,
+html[data-theme="04"] .form-label,
+html[data-theme="05"] .form-label,
+html[data-theme="01"] label,
+html[data-theme="02"] label,
+html[data-theme="03"] label,
+html[data-theme="04"] label,
+html[data-theme="05"] label {
+    color: var(--color-text-primary) !important;
+}
+
+html[data-theme="01"] .form-hint,
+html[data-theme="02"] .form-hint,
+html[data-theme="03"] .form-hint,
+html[data-theme="04"] .form-hint,
+html[data-theme="05"] .form-hint {
+    color: var(--color-text-muted);
+}
+
+/* Breadcrumb + links */
+html[data-theme="01"] .breadcrumb,
+html[data-theme="02"] .breadcrumb,
+html[data-theme="03"] .breadcrumb,
+html[data-theme="04"] .breadcrumb,
+html[data-theme="05"] .breadcrumb,
+html[data-theme="01"] .breadcrumb a,
+html[data-theme="02"] .breadcrumb a,
+html[data-theme="03"] .breadcrumb a,
+html[data-theme="04"] .breadcrumb a,
+html[data-theme="05"] .breadcrumb a {
+    color: var(--color-text-muted);
+}
+
+/* Secondary / ghost buttons on dark */
+html[data-theme="01"] .btn-secondary,
+html[data-theme="02"] .btn-secondary,
+html[data-theme="03"] .btn-secondary,
+html[data-theme="04"] .btn-secondary,
+html[data-theme="05"] .btn-secondary {
+    background: var(--color-bg-muted);
+    color: var(--color-text-primary);
+    border-color: var(--color-border-medium);
+}
+
+/* Flash alert text sits on tinted backgrounds — keep dark ink for contrast */
+html[data-theme="01"] .alert,
+html[data-theme="02"] .alert,
+html[data-theme="03"] .alert,
+html[data-theme="04"] .alert,
+html[data-theme="05"] .alert,
+html[data-theme="01"] .alert .alert-message,
+html[data-theme="02"] .alert .alert-message,
+html[data-theme="03"] .alert .alert-message,
+html[data-theme="04"] .alert .alert-message,
+html[data-theme="05"] .alert .alert-message,
+html[data-theme="01"] .alert-title,
+html[data-theme="02"] .alert-title,
+html[data-theme="03"] .alert-title,
+html[data-theme="04"] .alert-title,
+html[data-theme="05"] .alert-title {
+    color: #111827 !important;
+}
+
+/* Code chips */
+html[data-theme="01"] code,
+html[data-theme="02"] code,
+html[data-theme="03"] code,
+html[data-theme="04"] code,
+html[data-theme="05"] code {
+    background: var(--color-bg-muted);
+    color: var(--color-text-primary);
+}

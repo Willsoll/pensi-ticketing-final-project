@@ -10,9 +10,37 @@ require_once __DIR__ . '/../../Middleware/middleware.php';
 $page_title  = $page_title ?? 'Pensi School - Event Ticketing';
 $logged_user = current_user();
 $flash       = get_flash();
+
+/* ===== Theme engine: 10 design iterations (5 dark, 5 light) =====
+   Selectable via ?theme=NN or cookie pensi_theme. Default 07 Aurora Glass. */
+$pensi_themes = [
+    '01' => 'midnight-aurora',
+    '02' => 'obsidian-split',
+    '03' => 'cyber-grid',
+    '04' => 'deep-space',
+    '05' => 'carbon-neon',
+    '06' => 'paper-minimal',
+    '07' => 'aurora-glass',
+    '08' => 'neo-brutal',
+    '09' => 'soft-pastel',
+    '10' => 'editorial',
+];
+$pensi_theme = '07';
+if (isset($_GET['theme']) && is_string($_GET['theme']) && isset($pensi_themes[$_GET['theme']])) {
+    $pensi_theme = $_GET['theme'];
+    setcookie('pensi_theme', $pensi_theme, [
+        'expires'  => time() + 31536000,
+        'path'     => '/',
+        'httponly' => false,
+        'samesite' => 'Lax',
+    ]);
+} elseif (isset($_COOKIE['pensi_theme']) && is_string($_COOKIE['pensi_theme']) && isset($pensi_themes[$_COOKIE['pensi_theme']])) {
+    $pensi_theme = $_COOKIE['pensi_theme'];
+}
+$pensi_theme_file = $pensi_themes[$pensi_theme];
 ?>
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-theme="<?= e($pensi_theme) ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -21,6 +49,11 @@ $flash       = get_flash();
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/assets/css/design-system.css">
+    <link rel="stylesheet" href="/assets/css/themes/theme-<?= e($pensi_theme) ?>-<?= e($pensi_theme_file) ?>.css">
+    <?php if ((int)$pensi_theme <= 5): ?>
+    <link rel="stylesheet" href="/assets/css/themes/_dark-fixes.css">
+    <?php endif; ?>
+    <script src="/assets/js/ui.js" defer></script>
     <style>
         .seat-map { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 8px; margin: 16px 0; }
         .seat { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; border-radius: 8px; cursor: pointer; transition: all 120ms ease; border: 2px solid transparent; position: relative; }

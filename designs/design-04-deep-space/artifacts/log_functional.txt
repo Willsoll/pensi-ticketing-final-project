@@ -1,0 +1,38 @@
+[SECURITY] PHP version 8.2.12 is outdated. PHP2Shell (CVE-2026-109619) mitigation requires PHP >= 8.2.35. Consider upgrading or ensure session.upload_progress.enabled=Off in php.ini.
+PASS  | 1. DB connection & all 9 tables present                 | tables=audit_logs,detail_tiket_satuan,jenis_tiket,kode_promo,kursi_pensi,login_attempts,pemesanan,rundown_acara,users
+PASS  | 2. 6 seed accounts password_verify(password123) + role/tipe | admin_osis=OK; dewi_siswa=OK; maya_tamu=OK; panitia_keu=OK; petugas_gate=OK; rizki_alumni=OK
+PASS  | 3a. GET / returns 200 and contains PENSI SCHOOL         | code=200
+PASS  | 3b. GET /login.php returns 200                          | code=200
+PASS  | 3c. GET /dashboard_peserta.php unauthenticated 302 to login.php | code=302 loc=login.php
+PASS  | 4. Login flow dewi_siswa -> 302 dashboard_peserta.php + session cookie | get_login_code=200; csrf_parsed=yes; post_login_code=302; post_login_loc=dashboard_peserta.php; new_cookie_set=yes
+PASS  | 5. Authenticated dashboard_peserta.php 200 contains user name | code=200 nama=Dewi Lestari (Siswa Internal) found_in_body=yes
+PASS  | 6. Expiry: Menunggu Bayar past deadline -> Kadaluarsa, stock restored, cleaned up | status=Kadaluarsa stok_tersedia=10 (expected 10) stok_tertahan=0 kursi=Available; leftover_rows=0
+PASS  | 7. Ticket limit: 5 Lunas tickets -> check_user_ticket_limit(user,1) === false | existing=2 check(+1)=false (expected false) check(+0)=false
+PASS  | 8. Code generation: distinct + match PEN-6digits-32hex-index | k1=PEN-261119-1BC900CBF16E684068B9BFD462379F05-1 k2=PEN-261119-B3554D712B6964AEA8873DB26C4398E9-1 differ=true regex=true
+PASS  | 9. render_barcode_svg() returns svg containing ticket code | svg_start=yes contains_code=yes
+PASS  | 10. GET /etiket.php unauthenticated returns 302         | code=302 loc=login.php
+PASS  | 11. RBAC: buyer on /crud_tiket.php returns 403          | code=403
+PASS  | 12. Unique index detail_tiket_satuan.kode_tiket_unik (SHOW INDEX) | matching_unique_index_rows=1
+
+==============================================================================
+FUNCTIONAL TEST SUMMARY
+==============================================================================
+      | CHECK                                                   | DETAIL
+------------------------------------------------------------------------------
+PASS  | 1. DB connection & all 9 tables present                 | tables=audit_logs,detail_tiket_satuan,jenis_tiket,kode_promo,kursi_pensi,login_attempts,pemesanan,rundown_acara,users
+PASS  | 2. 6 seed accounts password_verify(password123) + role/tipe | admin_osis=OK; dewi_siswa=OK; maya_tamu=OK; panitia_keu=OK; petugas_gate=OK; rizki_alumni=OK
+PASS  | 3a. GET / returns 200 and contains PENSI SCHOOL         | code=200
+PASS  | 3b. GET /login.php returns 200                          | code=200
+PASS  | 3c. GET /dashboard_peserta.php unauthenticated 302 to login.php | code=302 loc=login.php
+PASS  | 4. Login flow dewi_siswa -> 302 dashboard_peserta.php + session cookie | get_login_code=200; csrf_parsed=yes; post_login_code=302; post_login_loc=dashboard_peserta.php; new_cookie_set=yes
+PASS  | 5. Authenticated dashboard_peserta.php 200 contains user name | code=200 nama=Dewi Lestari (Siswa Internal) found_in_body=yes
+PASS  | 6. Expiry: Menunggu Bayar past deadline -> Kadaluarsa, stock restored, cleaned up | status=Kadaluarsa stok_tersedia=10 (expected 10) stok_tertahan=0 kursi=Available; leftover_rows=0
+PASS  | 7. Ticket limit: 5 Lunas tickets -> check_user_ticket_limit(user,1) === false | existing=2 check(+1)=false (expected false) check(+0)=false
+PASS  | 8. Code generation: distinct + match PEN-6digits-32hex-index | k1=PEN-261119-1BC900CBF16E684068B9BFD462379F05-1 k2=PEN-261119-B3554D712B6964AEA8873DB26C4398E9-1 differ=true regex=true
+PASS  | 9. render_barcode_svg() returns svg containing ticket code | svg_start=yes contains_code=yes
+PASS  | 10. GET /etiket.php unauthenticated returns 302         | code=302 loc=login.php
+PASS  | 11. RBAC: buyer on /crud_tiket.php returns 403          | code=403
+PASS  | 12. Unique index detail_tiket_satuan.kode_tiket_unik (SHOW INDEX) | matching_unique_index_rows=1
+------------------------------------------------------------------------------
+TOTAL: 14 checks | 14 PASS | 0 FAIL
+==============================================================================

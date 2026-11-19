@@ -30,13 +30,13 @@ require_once __DIR__ . '/../src/Views/layouts/header.php';
 </div>
 
 <!-- HERO / INFO ACARA UTAMA -->
-<div class="card card-elevated" style="margin-bottom: var(--space-8);">
+<div class="card card-elevated reveal" style="margin-bottom: var(--space-8);" data-parallax="0.06">
     <div class="card-header">
         <h2 class="card-title" style="color: var(--color-primary); margin: 0;">PENSI SCHOOL 2026 - Pentas Seni Tahunan</h2>
     </div>
     <div class="card-body">
         <div class="grid grid-cols-1 grid-cols-3" style="gap: var(--space-5);">
-            <div class="card card-bordered" style="background: var(--color-info-bg); border-color: var(--color-info-border);">
+            <div class="card card-bordered reveal" data-tilt style="background: var(--color-info-bg); border-color: var(--color-info-border);">
                 <div class="card-body" style="padding: var(--space-5);">
                     <div class="flex items-center gap-3 mb-3">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-info)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -51,7 +51,7 @@ require_once __DIR__ . '/../src/Views/layouts/header.php';
                     <div style="margin-top: var(--space-1); color: var(--color-text-muted);">17:00 - 22:00 WIB</div>
                 </div>
             </div>
-            <div class="card card-bordered" style="background: var(--color-success-bg); border-color: var(--color-success-border);">
+            <div class="card card-bordered reveal" data-tilt style="background: var(--color-success-bg); border-color: var(--color-success-border);">
                 <div class="card-body" style="padding: var(--space-5);">
                     <div class="flex items-center gap-3 mb-3">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -64,7 +64,7 @@ require_once __DIR__ . '/../src/Views/layouts/header.php';
                     <div style="margin-top: var(--space-1); color: var(--color-text-muted);">Jl. Raya Serpong, Tangerang Selatan</div>
                 </div>
             </div>
-            <div class="card card-bordered" style="background: var(--color-warning-bg); border-color: var(--color-warning-border);">
+            <div class="card card-bordered reveal" data-tilt style="background: var(--color-warning-bg); border-color: var(--color-warning-border);">
                 <div class="card-body" style="padding: var(--space-5);">
                     <div class="flex items-center gap-3 mb-3">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-warning)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -86,7 +86,7 @@ require_once __DIR__ . '/../src/Views/layouts/header.php';
 </div>
 
 <!-- RUNDOWN ACARA -->
-<div class="card card-elevated" style="margin-bottom: var(--space-8);">
+<div class="card card-elevated reveal" style="margin-bottom: var(--space-8);">
     <div class="card-header">
         <h3 class="card-title">Rundown Acara & Penampilan</h3>
     </div>
@@ -128,7 +128,7 @@ require_once __DIR__ . '/../src/Views/layouts/header.php';
 </div>
 
 <!-- JENIS TIKET & HARGA -->
-<div class="card card-elevated" style="margin-bottom: var(--space-8);">
+<div class="card card-elevated reveal" style="margin-bottom: var(--space-8);">
     <div class="card-header">
         <h3 class="card-title">Jenis Tiket, Harga & Stok</h3>
     </div>

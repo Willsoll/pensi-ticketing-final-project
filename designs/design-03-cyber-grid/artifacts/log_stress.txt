@@ -1,0 +1,35 @@
+PHASE 1 - Sequential GETs (100 x /  + 50 x /login.php)
+  sequential requests: 150  |  latency min=11.03ms avg=25.23ms max=504.28ms
+  non-200 count: 0  |  HTTP 500 count: 0  |  connect errors: 0
+  status breakdown: HTTP 200: 150
+PASS  | 1a. Sequential: 150 requests completed (100 x /, 50 x /login.php) | n=150
+PASS  | 1b. Sequential: zero HTTP 500 errors                         | 500s=0
+PASS  | 1c. Sequential: zero non-200 responses                       | non200=0
+PASS  | 1d. Sequential: no connect errors                            | errors=0
+
+PHASE 2 - Parallel GETs (10 x / via curl_multi)
+  parallel statuses: 200 200 200 200 200 200 200 200 200 200
+  parallel errors: 0  |  status breakdown: HTTP 200: 10
+PASS  | 2a. Parallel: 10 requests all completed                      | n=10
+PASS  | 2b. Parallel: zero HTTP 500 errors                           | statuses=200 200 200 200 200 200 200 200 200 200
+PASS  | 2c. Parallel: no connect errors                              | errors=0
+
+Total runtime: 3.86 s (limit 60 s)
+PASS  | 3. Total runtime under 60 seconds                            | 3.86 s
+
+==============================================================================
+STRESS TEST SUMMARY
+==============================================================================
+      | CHECK                                                        | DETAIL
+------------------------------------------------------------------------------
+PASS  | 1a. Sequential: 150 requests completed (100 x /, 50 x /login.php) | n=150
+PASS  | 1b. Sequential: zero HTTP 500 errors                         | 500s=0
+PASS  | 1c. Sequential: zero non-200 responses                       | non200=0
+PASS  | 1d. Sequential: no connect errors                            | errors=0
+PASS  | 2a. Parallel: 10 requests all completed                      | n=10
+PASS  | 2b. Parallel: zero HTTP 500 errors                           | statuses=200 200 200 200 200 200 200 200 200 200
+PASS  | 2c. Parallel: no connect errors                              | errors=0
+PASS  | 3. Total runtime under 60 seconds                            | 3.86 s
+------------------------------------------------------------------------------
+TOTAL: 8 checks | 8 PASS | 0 FAIL
+==============================================================================

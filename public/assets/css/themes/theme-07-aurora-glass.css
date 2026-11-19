@@ -1,0 +1,106 @@
+/*
+ * Theme: Aurora Glass
+ * Mode: light
+ * Design intent: Soft pastel gradient background with translucent glass cards,
+ * backdrop blur, pill buttons, and purple accent hover borders.
+ * Layout variation: glass cards with 20px radius, pill-shaped buttons.
+ */
+:root {
+  /* -- Mandatory ROMBEL 3.md palette -- */
+  --color-primary: #1E1B4B;
+  --color-primary-light: #312E81;
+  --color-primary-dark: #11103D;
+
+  --color-accent: #6D28D9;
+  --color-accent-light: #8B5CF6;
+  --color-accent-dark: #5B21B6;
+
+  --color-cta: #F97316;
+  --color-cta-light: #FB923C;
+  --color-cta-dark: #EA580C;
+
+  --color-header: #111827;
+  --color-header-light: #1F2937;
+
+  --color-bg: linear-gradient(135deg, rgba(30,27,75,0.08), rgba(109,40,217,0.06), rgba(249,115,22,0.06));
+  --color-bg-card: rgba(255,255,255,0.75);
+  --color-bg-muted: rgba(255,255,255,0.4);
+
+  --color-success: #059669;
+  --color-success-light: #10B981;
+  --color-success-bg: #ECFDF5;
+  --color-success-border: #A7F3D0;
+
+  --color-warning: #D97706;
+  --color-warning-light: #F59E0B;
+  --color-warning-bg: #FFFBEB;
+  --color-warning-border: #FCD34D;
+
+  --color-error: #DC2626;
+  --color-error-light: #EF4444;
+  --color-error-bg: #FEF2F2;
+  --color-error-border: #FECACA;
+
+  --color-info: #2563EB;
+  --color-info-light: #3B82F6;
+  --color-info-bg: #EFF6FF;
+  --color-info-border: #BFDBFE;
+
+  /* -- Semantic colors -- */
+  --color-text-primary: #111827;
+  --color-text-secondary: #4B5563;
+  --color-text-muted: #9CA3AF;
+  --color-text-inverse: #FFFFFF;
+  --color-text-on-primary: #FFFFFF;
+  --color-text-on-cta: #FFFFFF;
+
+  /* -- Borders (translucent glass) -- */
+  --color-border-light: rgba(255,255,255,0.5);
+  --color-border-medium: rgba(255,255,255,0.35);
+  --color-border-dark: rgba(255,255,255,0.2);
+  --color-border-focus: #6D28D9;
+
+  /* -- Radius (20px glass) -- */
+  --radius-md: 20px;
+  --radius-lg: 20px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  /* -- Shadows (soft glass) -- */
+  --shadow-sm: 0 1px 3px rgba(17,24,39,0.08);
+  --shadow-md: 0 8px 24px rgba(17,24,39,0.1);
+  --shadow-lg: 0 12px 32px rgba(17,24,39,0.12);
+  --shadow-xl: 0 16px 48px rgba(17,24,39,0.14);
+  --shadow-primary: 0 0 0 1px rgba(30,27,75,0.2);
+  --shadow-cta: 0 0 0 1px rgba(249,115,22,0.2);
+}
+
+/* Glass cards: translucent with backdrop blur */
+.card {
+  background: var(--color-bg-card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
+}
+
+/* Pill buttons */
+.btn {
+  border-radius: var(--radius-full);
+}
+.btn-primary {
+  border-radius: var(--radius-full);
+}
+.btn-cta {
+  border-radius: var(--radius-full);
+}
+
+/* Purple accent borders on hover */
+.btn-primary:hover:not(:disabled) {
+  border: 1px solid var(--color-accent);
+  box-shadow: none;
+}
+.btn-cta:hover:not(:disabled) {
+  border: 1px solid var(--color-accent);
+  box-shadow: none;
+}
