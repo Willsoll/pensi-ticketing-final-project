@@ -61,3 +61,6 @@ storage/installed.lock
 storage/logs/
 storage/cache/
 storage/uploads/
+public/uploads/bukti/*
+!public/uploads/bukti/contoh_bukti.png
+!public/uploads/bukti/.htaccess
