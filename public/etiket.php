@@ -71,7 +71,7 @@ if ($kode !== '') {
     }
 }
 
-$pageTitle = 'E-Ticket ' . e($kode);
+$pageTitle = 'E-Ticket ' . $kode;
 $pageSubtitle = $transaksi ? e($transaksi['judul_event']) : 'PENSI EVENTPRO';
 $activeNav = 'index.php';
 require __DIR__ . '/../src/Views/layouts/header.php';

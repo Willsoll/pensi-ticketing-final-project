@@ -75,7 +75,7 @@ if (!empty($tiers)) {
     }
 }
 
-$pageTitle   = 'Detail - ' . e($event['judul_event']);
+$pageTitle   = 'Detail - ' . $event['judul_event'];
 $pageSubtitle = 'Pilih tiket dan atur pesanan Anda';
 $activeNav   = 'index.php';
 require __DIR__ . '/../src/Views/layouts/header.php';
