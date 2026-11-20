@@ -6,6 +6,10 @@ Informatics final project report (rubric mapping, business rules, version archiv
 
 ![Catalog — light theme](docs/screenshots/catalog-light.png)
 
+![EO dashboard — occupancy and daily sales](docs/screenshots/eo-dashboard-light.png)
+
+![Seat picker](docs/screenshots/detail-seat.png)
+
 ## Features
 
 - **Multi-event catalog** — filter by category, city, date range, quota status + real-time search
