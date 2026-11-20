@@ -1,0 +1,5 @@
+
+# legacy experiment — excluded from repo
+vendor/
+.env
+storage/logs/
