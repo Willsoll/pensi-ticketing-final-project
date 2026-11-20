@@ -2,6 +2,8 @@
 
 Native **PHP 8.2 + MariaDB** ticketing platform: multi-event catalog, seat/quota locking, conditional vouchers, 4-role RBAC, and e-tickets with vertical barcodes — wrapped in a 10-theme UI.
 
+Informatics final project report (rubric mapping, business rules, version archive): [`FINAL_PROJECT.md`](FINAL_PROJECT.md).
+
 ![Catalog — light theme](docs/screenshots/catalog-light.png)
 
 ## Features
