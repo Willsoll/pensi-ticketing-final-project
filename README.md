@@ -98,6 +98,8 @@ Demo accounts (password `password123`): `admin.eo@eventpro.id`, `finance@eventpr
 
 Legacy branches: `legacy/php-flat-template` (original flat app) and `legacy/mvc-rewrite` (MVC experiment).
 
+Full iteration list (base template → v6.1, with tags and dates): [`CHANGELOG.md`](CHANGELOG.md).
+
 ## Notes
 
 Academic project. Not production-ready without infrastructure upgrades (PHP ≥ 8.2.35,
