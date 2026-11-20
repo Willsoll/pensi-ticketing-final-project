@@ -38,7 +38,7 @@ architectures are preserved as legacy branches.
 ## Restoring an iteration
 
 ```bash
-git clone https://github.com/Willsoll/pensi-eventpro.git
+git clone https://github.com/Willsoll/pensi-ticketing-final-project.git
 cd pensi-eventpro
 
 git checkout v6.1-portable          # latest portable build
