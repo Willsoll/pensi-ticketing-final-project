@@ -1,138 +1,104 @@
-# PENSI EVENTPRO — Team Test Build (v4.2)
+# PENSI EVENTPRO — Multi-Event Ticketing Platform (PAKET 7)
 
-Aplikasi pemesanan tiket event multi-event (PAKET 7) berbasis **Native PHP + MySQL**.
-Build ini dibuat agar bisa dijalankan di **XAMPP** maupun **Laragon** tanpa mengubah kode.
+Native **PHP 8.2 + MariaDB** ticketing platform: multi-event catalog, seat/quota locking, conditional vouchers, 4-role RBAC, and e-tickets with vertical barcodes — wrapped in a 10-theme UI.
 
----
+![Catalog — light theme](docs/screenshots/catalog-light.png)
 
-## 1. Yang dibutuhkan
+## Features
 
-- XAMPP atau Laragon (Apache + MySQL/MariaDB + PHP 8.0+)
-- PHP extension: `pdo_mysql`, `gd`, `fileinfo` (biasanya sudah aktif di XAMPP/Laragon)
-- Browser modern (Chrome/Edge/Firefox)
+- **Multi-event catalog** — filter by category, city, date range, quota status + real-time search
+- **Event detail** — rundown, tier quotas & sale deadlines, interactive seat map (Seated) or quantity (Free Standing)
+- **4 roles** — `customer`, `admin_eo`, `finance`, `gate_officer`, bcrypt cost-12 + RBAC middleware
+- **Identity binding** — unique participant name + NIK per sheet, max 5 tickets per event per NIK
+- **Conditional vouchers** — percent or nominal, minimum spend, usage quota, expiry
+- **Checkout** — subtotal / discount / service fee / total, 15-minute countdown, proof upload
+- **Payments** — bank transfer (BCA) or cash, verified by finance
+- **E-tickets** — issued only after `Paid`; JPG (1100×620) and PDF (A4 landscape), vertical barcode, unique code + NIK
+- **Gate check-in** — code + NIK validation, anti-passback with previous time and officer
+- **EO analytics** — gross, discounts, net, fees, occupancy per tier, 14-day chart
+- **Admin** — event/tier CRUD, seat generator, voucher manager, audit log
+- **UI** — 10 themes (5 dark / 5 light), indigo sidebar, custom controls, proof modal, accessible tables
 
----
-
-## 2. Cara tercepat (XAMPP / Laragon, tanpa ubah DocumentRoot)
-
-1. Ekstrak folder ini sehingga menjadi:
-   - XAMPP: `C:\xampp\htdocs\pensi`
-   - Laragon: `C:\laragon\www\pensi`
-2. Jalankan **Apache** dan **MySQL** dari control panel XAMPP/Laragon.
-3. Buka di browser:
-   - `http://localhost/pensi/setup.php`
-   - (jika 404/403, coba `http://localhost/pensi/public/setup.php`)
-4. Isi form database (default sudah benar untuk XAMPP/Laragon):
-   - Host `127.0.0.1`, Port `3306`, User `root`, Password **kosong**, Nama DB `db_tiket_event_pro`
-5. Klik **Instal Sekarang** → tunggu sampai muncul “Instalasi berhasil”.
-6. Klik **Buka Aplikasi**, atau buka `http://localhost/pensi/`.
-
-> Installer membuat database, mengimpor skema, mengisi data demo, dan menulis `config.local.php`.
-> File `public/setup.php` otomatis terkunci setelah instalasi.
-
-### Jika rewrite `.htaccess` tidak aktif
-Buka langsung: `http://localhost/pensi/public/` — aplikasi tetap berjalan (CSS/JS ikut benar).
-
----
-
-## 3. Cara alternatif: DocumentRoot / Virtual Host
-
-Arahkan DocumentRoot (atau vhost Laragon) ke folder **`public/`**:
-
-```apache
-DocumentRoot "C:/xampp/htdocs/pensi/public"
-<Directory "C:/xampp/htdocs/pensi/public">
-    AllowOverride All
-    Require all granted
-</Directory>
-```
-
-Lalu buka `http://localhost/` (atau domain vhost) dan jalankan `setup.php`.
-
----
-
-## 4. Instalasi via CLI (opsional)
-
-```bash
-cd C:\xampp\htdocs\pensi
-php install.php --user=root --pass= --name=db_tiket_event_pro
-```
-
-Atau jalankan `install.bat` (Windows).
-
----
-
-## 5. Akun demo (password: `password123`)
-
-| Email | Peran |
+| Dark theme | EO dashboard |
 |---|---|
-| `admin.eo@eventpro.id` | Event Organizer (dashboard, CRUD, voucher, audit) |
-| `finance@eventpro.id` | Verifikasi pembayaran |
-| `gate@eventpro.id` | Gate check-in |
-| `dewi@student.id` | Peserta (sudah punya transaksi) |
-| `rizki@alumni.id` | Peserta |
-| `maya@guest.id` | Peserta |
+| ![Catalog — dark](docs/screenshots/catalog-dark.png) | ![EO dashboard](docs/screenshots/eo-dashboard-dark.png) |
 
-Data demo: 4 event (Jakarta, Tangerang, Bandung, Serpong), 12 tier, 230 kursi, 4 voucher
-(`HEMAT10`, `POTONG25K`, `EARLYBIRD`, `MAHASISWA20`), 13 transaksi, 13 e-ticket.
+| Login | E-ticket |
+|---|---|
+| ![Login](docs/screenshots/login.png) | ![E-ticket](docs/screenshots/e-ticket.jpg) |
 
----
+## Tech stack
 
-## 6. Tema
+- PHP 8.2 (native — no framework, no Composer)
+- MariaDB 10.4+ / MySQL 8 — `db_tiket_event_pro` (9 graded tables + support tables)
+- Apache 2.4 + `.htaccess` hardening (XAMPP-compatible)
+- Vanilla JS, CSS custom properties, GD + FreeType for ticket rendering
 
-- Default: `07` Aurora Glass (light)
-- Ganti lewat tombol mengambang di kanan bawah, atau URL `?theme=01` … `?theme=10`
-- 01–05 dark, 06–10 light. Pilihan tersimpan di cookie.
-
----
-
-## 7. Struktur folder
+## Structure
 
 ```
-pensi/
-├─ public/            ← webroot (semua halaman PHP + assets)
-├─ src/               ← Config, Middleware, Views
-├─ database/          ← schema.sql, seed.php, seed_lib.php
-├─ storage/           ← secret & lock (jangan dihapus)
-├─ tests/             ← functional_test.php (32 check)
-├─ docs/              ← panduan testing & feedback
-├─ install.php        ← installer CLI
-├─ config.local.php   ← dibuat installer (kredensial DB)
-└─ .htaccess          ← rewrite ke public/ + proteksi folder
+public/        DocumentRoot — pages, assets, themes, fonts, uploads
+src/
+  Config/      PDO connection, constants, HMAC secret
+  Middleware/  session security, CSRF, RBAC, expiry, voucher & limit logic
+  Views/       sidebar layout, footer, 403
+database/      schema.sql (official schema), seed.php
+tests/         functional_test.php — 32 checks
+docs/          test accounts, deployment, user guide, screenshots
+designs/       10 theme folders (CSS + summaries)
 ```
 
----
-
-## 8. Panduan pengguna
-
-Panduan langkah demi langkah untuk peserta, finance, gate, dan admin:
-**`docs/USER_GUIDE.md`**.
-
-## 9. Testing & feedback
-
-1. Baca `docs/TESTING_GUIDE.md` dan jalankan skenario 1–15.
-2. Catat hasil di `docs/FEEDBACK_TEMPLATE.md` (salin ke file baru).
-3. Sertakan screenshot untuk bug dan isi lingkungan (XAMPP/Laragon, versi PHP, browser).
-4. Kirim ke saya → saya perbaiki → build baru dikirim lagi.
-
-Panduan lengkap: `docs/TESTING_GUIDE.md`, `docs/FEEDBACK_TEMPLATE.md`, `docs/TROUBLESHOOTING.md`.
-
-Jika ada error: cek `docs/TROUBLESHOOTING.md`, lalu kirim potongan
-`C:\xampp\apache\logs\error.log` (atau `laragon\bin\apache\...\logs\error.log`).
-
----
-
-## 10. Reset data demo
+## Quick start (XAMPP)
 
 ```bash
-php install.php --user=root --pass= --name=db_tiket_event_pro
+# 1. Put the project at C:\xampp\htdocs\pensi-eventpro
+# 2. Point Apache DocumentRoot at .../public (or open /pensi-eventpro/public/)
+# 3. Create the database
+mysql -u root < database/schema.sql
+php database/seed.php
+
+# 4. Run tests
+php tests/functional_test.php      # 32 PASS
 ```
-atau hapus `storage/installed.lock` lalu buka `setup.php` lagi.
 
----
+Portable one-command installer (from the `v6.1-portable` tag): `php install/install.php --user=root --pass=`.
 
-## 11. Catatan keamanan untuk build testing
+Demo accounts (password `password123`): `admin.eo@eventpro.id`, `finance@eventpro.id`,
+`gate@eventpro.id`, `dewi@student.id`. Full list: [`docs/TEST_ACCOUNTS.md`](docs/TEST_ACCOUNTS.md).
 
-- `setup.php` hanya menerima akses dari localhost dan mati setelah instalasi.
-- Jangan unggah folder `storage/`, `config.local.php`, atau file `.sql` ke hosting publik.
-- Untuk demonstrasi publik nanti, gunakan kredensial DB khusus (bukan root) dan hapus `setup.php`.
+## Security
+
+- bcrypt cost-12, automatic rehash, session ID regeneration on login
+- Login throttling (5 attempts / 15 min), generic errors, timing-equalised dummy hash
+- Prepared statements (`EMULATE_PREPARES=false`), output escaping, CSRF on every POST
+- Upload MIME sniffing + size cap + random names, PHP execution blocked in `uploads/`
+- Security headers, `SameSite=Strict` cookies, audit log
+- PHP2Shell (CVE-2024-4577) mitigated at application layer; upgrade PHP ≥ 8.2.35 recommended
+
+## Mandat CEO rules
+
+1. 15-minute stock locking; expiry restores stock, seats, and voucher usage
+2. Max **5 tickets per event per NIK** across transactions
+3. Distinct participant name **and** NIK on every sheet
+4. Voucher requires subtotal ≥ minimum, remaining quota, and valid date
+5. E-ticket 1-to-many, issued only after `Paid`
+6. Gate validates code + NIK; repeat scan rejected (anti-passback)
+
+## Version history
+
+| Tag | Milestone |
+|---|---|
+| `v1.0-hardened` | First flat-PHP build + security audit (27 fixes) |
+| `v2.0-working` | `public/` + `src/` restructure |
+| `v3-ten-designs` | Design system + 10 themes + e-ticket JPG/PDF |
+| `v4-multievent` | Rewrite to `db_tiket_event_pro`, multi-event, 12 pages |
+| `v5-ui-accessibility` | Borders, table grid, dark-mode contrast, custom forms |
+| `v6-payments-eticket` | Train-ticket e-ticket, cash/transfer, proof modal |
+| `v6.1-portable` | Portable installer, bundled fonts, env-driven setup |
+
+Legacy branches: `legacy/php-flat-template` (original flat app) and `legacy/mvc-rewrite` (MVC experiment).
+
+## Notes
+
+Academic project. Not production-ready without infrastructure upgrades (PHP ≥ 8.2.35,
+Apache ≥ 2.4.59, MariaDB ≥ 10.11) and replacing demo credentials.
