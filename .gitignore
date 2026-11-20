@@ -64,3 +64,16 @@ storage/uploads/
 public/uploads/bukti/*
 !public/uploads/bukti/contoh_bukti.png
 !public/uploads/bukti/.htaccess
+
+# XAMPP defaults & legacy local folders (not part of the application)
+/dashboard/
+/xampp/
+/img/
+/applications.html
+/bitnami.css
+/favicon.ico
+/config/
+/assets/
+/uploads/
+/.htaccess
+/diagnose_kategori.php
