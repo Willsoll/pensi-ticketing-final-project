@@ -74,7 +74,7 @@ Demo accounts (password `password123`): `admin.eo@eventpro.id`, `finance@eventpr
 
 ## Windows one-click installer
 
-Download [`PENSI_EVENTPRO_v6.2_PORTABLE.zip`](https://github.com/Willsoll/pensi-ticketing-final-project/releases/tag/v6.2-portable)
+Download [`PENSI_EVENTPRO_v6.2.1_PORTABLE.zip`](https://github.com/Willsoll/pensi-ticketing-final-project/releases/tag/v6.2.1-portable)
 (25 MB): run `PENSI_EVENTPRO_Setup.exe`, choose XAMPP or Laragon, and it installs
 the app, imports the database, starts Apache/MySQL, and opens the site.
 
