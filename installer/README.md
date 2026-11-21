@@ -7,11 +7,13 @@ XAMPP or Laragon.
 ## What it does
 
 1. Extracts the embedded payload to `%TEMP%`.
-2. Detects `C:\xampp` / `C:\laragon` (or asks for a custom path).
-3. Backs up an existing `pensi-eventpro` folder, then copies the app into
-   `htdocs\pensi-eventpro` (XAMPP) or `www\pensi-eventpro` (Laragon).
-4. Imports `database/db_tiket_event_pro.sql` as MySQL root (prompts for the
-   password; blank works for default XAMPP/Laragon).
+2. Detects XAMPP/Laragon on any drive, from environment variables, running
+   `httpd`/`mysqld` processes, or a custom path.
+3. Backs up an existing `pensi-eventpro` folder, then copies the app into the
+   real webroot (`htdocs` / `www` / Apache `DocumentRoot`).
+4. Starts MySQL if port 3306 is closed, then imports
+   `database/db_tiket_event_pro.sql` as root. It tries a **blank password
+   first**; a prompt appears only if the root account actually has a password.
 5. Writes `config.local.php` with the local credentials.
 6. Starts Apache/MySQL if ports 80/3306 are closed, then opens
    `http://localhost/pensi-eventpro/public/`.

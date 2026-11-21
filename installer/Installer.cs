@@ -517,8 +517,12 @@ internal static class Program
     private static void StartProcess(string exe, string args, string workdir)
     {
         ProcessStartInfo psi = new ProcessStartInfo(exe, args);
-        psi.UseShellExecute = false;
-        psi.CreateNoWindow = true;
+        // Detach services from the installer console. UseShellExecute avoids
+        // inheriting the installer's stdout handle (which would keep the
+        // terminal open after the installer exits), and Hidden prevents a
+        // stray mysqld/httpd console window.
+        psi.UseShellExecute = true;
+        psi.WindowStyle = ProcessWindowStyle.Hidden;
         psi.WorkingDirectory = workdir;
         Process.Start(psi);
     }
