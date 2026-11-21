@@ -80,6 +80,16 @@ the app, imports the database, starts Apache/MySQL, and opens the site.
 
 See [`SOURCE_LAYOUT.md`](SOURCE_LAYOUT.md) for the source tree and [`docs/PORTABILITY.md`](docs/PORTABILITY.md) for the path/portability audit and installer test matrix.
 
+## InfinityFree / shared hosting
+
+Download [`PENSI_EVENTPRO_INFINITYFREE_FULL.zip`](https://github.com/Willsoll/pensi-ticketing-final-project/releases/download/v6.2.3-portable/PENSI_EVENTPRO_INFINITYFREE_FULL.zip)
+(4.8 MB): upload/extract the contents into `htdocs`, import
+`database/infinityfree_import.sql` in phpMyAdmin, then copy
+`config.local.example.php` to `config.local.php` and fill in the database
+credentials. The root URL redirects to `/public/`.
+
+Step-by-step: [`deploy/INFINITYFREE_SETUP.md`](deploy/INFINITYFREE_SETUP.md).
+
 ## Security
 
 - bcrypt cost-12, automatic rehash, session ID regeneration on login
