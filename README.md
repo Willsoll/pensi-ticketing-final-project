@@ -90,6 +90,21 @@ credentials. The root URL redirects to `/public/`.
 
 Step-by-step: [`deploy/INFINITYFREE_SETUP.md`](deploy/INFINITYFREE_SETUP.md).
 
+## Security-hardened deployment (v6.3.0)
+
+Five parallel audits plus live tests found and fixed critical issues in the
+flat website build (hard-coded DB credentials, public test runner, gate e-ticket
+IDOR, voucher quota, per-NIK limits, rate-limit bypass, config path).
+
+- [`PENSI_EVENTPRO_SECURE_WEBSITE.zip`](https://github.com/Willsoll/pensi-ticketing-final-project/releases/download/v6.3.0-security/PENSI_EVENTPRO_SECURE_WEBSITE.zip)
+- [`PENSI_EVENTPRO_SECURE_LOCALHOST.zip`](https://github.com/Willsoll/pensi-ticketing-final-project/releases/download/v6.3.0-security/PENSI_EVENTPRO_SECURE_LOCALHOST.zip)
+- [Release notes](https://github.com/Willsoll/pensi-ticketing-final-project/releases/tag/v6.3.0-security)
+- Source branch: [`secure-flat`](https://github.com/Willsoll/pensi-ticketing-final-project/tree/secure-flat)
+
+**Manual after upload:** rotate the MySQL password, create `config.local.php`,
+import `database/secure_passwords.sql`, remove old tests/docs/install/SQL/exe,
+and use PHP 8.2.35+.
+
 ## Security
 
 - bcrypt cost-12, automatic rehash, session ID regeneration on login
