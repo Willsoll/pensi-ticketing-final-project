@@ -4,9 +4,9 @@
 -- Native PHP + MySQL (MariaDB 10.4 compatible)
 -- ============================================================================
 
-DROP DATABASE IF EXISTS db_tiket_event_pro;
-CREATE DATABASE db_tiket_event_pro CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE db_tiket_event_pro;
+-- DROP DATABASE IF EXISTS db_tiket_event_pro;
+-- CREATE DATABASE db_tiket_event_pro CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE `db_tiket_event_pro`;
 
 -- ---------------------------------------------------------------------------
 -- users — 4 peran: customer, admin_eo, finance, gate_officer

@@ -1,0 +1,45 @@
+Options -Indexes
+DirectoryIndex index.php
+
+# PHP2Shell / session upload progress hardening (works when mod_php is used).
+<IfModule mod_php.c>
+    php_flag session.upload_progress.enabled off
+</IfModule>
+<IfModule mod_php7.c>
+    php_flag session.upload_progress.enabled off
+</IfModule>
+<IfModule mod_php8.c>
+    php_flag session.upload_progress.enabled off
+</IfModule>
+
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+    Header always set Content-Security-Policy "default-src 'self' 'unsafe-inline' data: blob:; img-src 'self' data: blob:; font-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+    Header unset X-Powered-By
+</IfModule>
+
+# Deny non-runtime files and application internals.
+<FilesMatch "(^\.(env|git|htaccess|htpasswd)|\.(sql|log|ini|bak|key|md|txt|zip|exe|lock|sh))$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(src|database|storage|tests|docs|designs|install)(/|$) - [F,L,NC]
+    RewriteRule ^(config\.local\.php|config\.local\.example\.php)$ - [F,L,NC]
+
+    # Uploaded files are served through bukti.php, never executed directly.
+    RewriteRule ^uploads/.*\.(php|phtml|phar|php[0-9])$ - [F,L,NC]
+
+    RewriteCond %{REQUEST_METHOD} ^(TRACE|TRACK)$
+    RewriteRule .* - [F]
+</IfModule>

@@ -1,130 +1,36 @@
-# PENSI EVENTPRO — Multi-Event Ticketing Platform (PAKET 7)
+# PENSI EVENTPRO — secure flat deployment source
 
-Native **PHP 8.2 + MariaDB** ticketing platform: multi-event catalog, seat/quota locking, conditional vouchers, 4-role RBAC, and e-tickets with vertical barcodes — wrapped in a 10-theme UI.
+This branch preserves the **original website layout** (PHP pages at the webroot,
+`src/` beside them) while removing the issues found in the 2026-11-21 audit.
 
-Informatics final project report (rubric mapping, business rules, version archive): [`FINAL_PROJECT.md`](FINAL_PROJECT.md).
+## Fixes in this branch
 
-![Catalog — light theme](docs/screenshots/catalog-light.png)
+- Removed hard-coded InfinityFree DB credentials and host fallbacks.
+- Fixed `dirname(__DIR__, 1)` config/storage paths to `dirname(__DIR__, 2)`.
+- Removed public `tests/`, `install/`, `docs/`, `designs/`, the Windows installer
+  and SQL dumps from the deployment package.
+- Root `.htaccess` denies `src/`, `storage/`, `database/`, `config.local.php`,
+  old dev folders, `.sql`, `.log`, `.md`, `.exe`, and executable uploads.
+- Gate officers can no longer download arbitrary paid e-tickets (owner /
+  admin_eo / finance only).
+- Voucher remaining quota is decremented atomically; rejection/expiry restores it.
+- Per-user checkout is serialized, and the 5-ticket limit is enforced **per NIK**
+  across accounts.
+- Login throttling canonicalises email case and adds an IP-level limit.
+- CSP, nosniff, frame denial, referrer policy, permissions policy and HSTS
+  (HTTPS) headers; `X-Powered-By` removed.
+- PHP2Shell/session-upload-progress hardening in `.htaccess`.
 
-![EO dashboard — occupancy and daily sales](docs/screenshots/eo-dashboard-light.png)
+## Deployment
 
-![Seat picker](docs/screenshots/detail-seat.png)
-
-## Features
-
-- **Multi-event catalog** — filter by category, city, date range, quota status + real-time search
-- **Event detail** — rundown, tier quotas & sale deadlines, interactive seat map (Seated) or quantity (Free Standing)
-- **4 roles** — `customer`, `admin_eo`, `finance`, `gate_officer`, bcrypt cost-12 + RBAC middleware
-- **Identity binding** — unique participant name + NIK per sheet, max 5 tickets per event per NIK
-- **Conditional vouchers** — percent or nominal, minimum spend, usage quota, expiry
-- **Checkout** — subtotal / discount / service fee / total, 15-minute countdown, proof upload
-- **Payments** — bank transfer (BCA) or cash, verified by finance
-- **E-tickets** — issued only after `Paid`; JPG (1100×620) and PDF (A4 landscape), vertical barcode, unique code + NIK
-- **Gate check-in** — code + NIK validation, anti-passback with previous time and officer
-- **EO analytics** — gross, discounts, net, fees, occupancy per tier, 14-day chart
-- **Admin** — event/tier CRUD, seat generator, voucher manager, audit log
-- **UI** — 10 themes (5 dark / 5 light), indigo sidebar, custom controls, proof modal, accessible tables
-
-| Dark theme | EO dashboard |
-|---|---|
-| ![Catalog — dark](docs/screenshots/catalog-dark.png) | ![EO dashboard](docs/screenshots/eo-dashboard-dark.png) |
-
-| Login | E-ticket |
-|---|---|
-| ![Login](docs/screenshots/login.png) | ![E-ticket](docs/screenshots/e-ticket.jpg) |
-
-## Tech stack
-
-- PHP 8.2 (native — no framework, no Composer)
-- MariaDB 10.4+ / MySQL 8 — `db_tiket_event_pro` (9 graded tables + support tables)
-- Apache 2.4 + `.htaccess` hardening (XAMPP-compatible)
-- Vanilla JS, CSS custom properties, GD + FreeType for ticket rendering
-
-## Structure
-
-```
-public/        DocumentRoot — pages, assets, themes, fonts, uploads
-src/
-  Config/      PDO connection, constants, HMAC secret
-  Middleware/  session security, CSRF, RBAC, expiry, voucher & limit logic
-  Views/       sidebar layout, footer, 403
-database/      schema.sql (official schema), seed.php
-tests/         functional_test.php — 32 checks
-docs/          test accounts, deployment, user guide, screenshots
-designs/       10 theme folders (CSS + summaries)
-```
-
-## Quick start (XAMPP)
-
-```bash
-# 1. Put the project at C:\xampp\htdocs\pensi-eventpro
-# 2. Point Apache DocumentRoot at .../public (or open /pensi-eventpro/public/)
-# 3. Create the database
-mysql -u root < database/schema.sql
-php database/seed.php
-
-# 4. Run tests
-php tests/functional_test.php      # 32 PASS
-```
-
-Portable one-command installer (from the `v6.1-portable` tag): `php install/install.php --user=root --pass=`.
-
-Demo accounts (password `password123`): `admin.eo@eventpro.id`, `finance@eventpro.id`,
-`gate@eventpro.id`, `dewi@student.id`. Full list: [`docs/TEST_ACCOUNTS.md`](docs/TEST_ACCOUNTS.md).
-
-## Windows one-click installer
-
-Download [`PENSI_EVENTPRO_v6.2.3_PORTABLE.zip`](https://github.com/Willsoll/pensi-ticketing-final-project/releases/tag/v6.2.3-portable)
-(25 MB): run `PENSI_EVENTPRO_Setup.exe`, choose XAMPP or Laragon, and it installs
-the app, imports the database, starts Apache/MySQL, and opens the site.
-
-See [`SOURCE_LAYOUT.md`](SOURCE_LAYOUT.md) for the source tree and [`docs/PORTABILITY.md`](docs/PORTABILITY.md) for the path/portability audit and installer test matrix.
-
-## InfinityFree / shared hosting
-
-Download [`PENSI_EVENTPRO_INFINITYFREE_FULL.zip`](https://github.com/Willsoll/pensi-ticketing-final-project/releases/download/v6.2.3-portable/PENSI_EVENTPRO_INFINITYFREE_FULL.zip)
-(4.8 MB): upload/extract the contents into `htdocs`, import
-`database/infinityfree_import.sql` in phpMyAdmin, then copy
-`config.local.example.php` to `config.local.php` and fill in the database
-credentials. The root URL redirects to `/public/`.
-
-Step-by-step: [`deploy/INFINITYFREE_SETUP.md`](deploy/INFINITYFREE_SETUP.md).
-
-## Security
-
-- bcrypt cost-12, automatic rehash, session ID regeneration on login
-- Login throttling (5 attempts / 15 min), generic errors, timing-equalised dummy hash
-- Prepared statements (`EMULATE_PREPARES=false`), output escaping, CSRF on every POST
-- Upload MIME sniffing + size cap + random names, PHP execution blocked in `uploads/`
-- Security headers, `SameSite=Strict` cookies, audit log
-- PHP2Shell (CVE-2024-4577) mitigated at application layer; upgrade PHP ≥ 8.2.35 recommended
-
-## Mandat CEO rules
-
-1. 15-minute stock locking; expiry restores stock, seats, and voucher usage
-2. Max **5 tickets per event per NIK** across transactions
-3. Distinct participant name **and** NIK on every sheet
-4. Voucher requires subtotal ≥ minimum, remaining quota, and valid date
-5. E-ticket 1-to-many, issued only after `Paid`
-6. Gate validates code + NIK; repeat scan rejected (anti-passback)
-
-## Version history
-
-| Tag | Milestone |
-|---|---|
-| `v1.0-hardened` | First flat-PHP build + security audit (27 fixes) |
-| `v2.0-working` | `public/` + `src/` restructure |
-| `v3-ten-designs` | Design system + 10 themes + e-ticket JPG/PDF |
-| `v4-multievent` | Rewrite to `db_tiket_event_pro`, multi-event, 12 pages |
-| `v5-ui-accessibility` | Borders, table grid, dark-mode contrast, custom forms |
-| `v6-payments-eticket` | Train-ticket e-ticket, cash/transfer, proof modal |
-| `v6.1-portable` | Portable installer, bundled fonts, env-driven setup |
-
-Legacy branches: `legacy/php-flat-template` (original flat app) and `legacy/mvc-rewrite` (MVC experiment).
-
-Full iteration list (base template → v6.1, with tags and dates): [`CHANGELOG.md`](CHANGELOG.md).
+See `SECURE_SETUP.txt`. Import `database/secure_passwords.sql` after importing
+the demo database, rotate the MySQL password, and create `config.local.php` from
+the example. Never commit `config.local.php`.
 
 ## Notes
 
-Academic project. Not production-ready without infrastructure upgrades (PHP ≥ 8.2.35,
-Apache ≥ 2.4.59, MariaDB ≥ 10.11) and replacing demo credentials.
+- `database/` is present in the repo for local setup but is denied by
+  `.htaccess` in the webroot. On shared hosting, keep it outside the public
+  document root if possible.
+- The Windows installer and portable Git bundle are intentionally not part of
+  this branch; use the release assets for those.

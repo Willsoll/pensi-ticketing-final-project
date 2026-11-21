@@ -1,7 +1,7 @@
 <?php
 /**
  * Seed db_tiket_event_pro — konsisten secara stok, kursi, dan e-ticket.
- * Jalankan: C:/xampp/php/php.exe database/seed.php
+ * Jalankan: php database/seed.php
  */
 declare(strict_types=1);
 

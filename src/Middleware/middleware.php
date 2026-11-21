@@ -7,7 +7,7 @@ declare(strict_types=1);
 
 /**
  * Base path aplikasi agar bisa dijalankan di root domain maupun subfolder
- * (XAMPP htdocs/pensi, Laragon www/pensi, vhost, atau DocumentRoot langsung).
+ * (XAMPP/Laragon, vhost, atau DocumentRoot langsung).
  */
 function base_path(): string
 {
@@ -51,6 +51,9 @@ if (!headers_sent()) {
     header('X-Frame-Options: DENY');
     header('Referrer-Policy: strict-origin-when-cross-origin');
     header('Permissions-Policy: geolocation=(), microphone=(), camera=()');
+    if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+        header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+    }
 }
 
 // PHP2Shell (CVE-2024-4577) — pantau versi PHP yang belum dipatch.
@@ -230,7 +233,7 @@ function release_expired_transactions(PDO $pdo): int
         $freeSeat = $pdo->prepare("UPDATE kursi_event SET status_kursi='Available' WHERE id_kursi = ? AND status_kursi='Locked'");
         $getDet   = $pdo->prepare('SELECT id_tier, jumlah, id_kursi_list FROM transaksi_detail WHERE id_transaksi = ?');
         $updTrx   = $pdo->prepare("UPDATE transaksi SET status_bayar='Expired' WHERE id_transaksi = ?");
-        $decVou   = $pdo->prepare('UPDATE voucher_promo SET kuota_pakai = GREATEST(0, kuota_pakai - 1) WHERE id_voucher = ?');
+        $decVou   = $pdo->prepare('UPDATE voucher_promo SET kuota_pakai = kuota_pakai + 1 WHERE id_voucher = ?');
 
         foreach ($rows as $r) {
             $getDet->execute([$r['id_transaksi']]);
@@ -345,6 +348,33 @@ function check_user_ticket_limit(PDO $pdo, int $id_user, int $id_event, int $qty
                 'msg' => 'Batas maksimal ' . MAX_TIKET_PER_EVENT . ' tiket per event terlampaui (sudah ' . $used . ').'];
     }
     return ['ok' => true, 'used' => $used];
+}
+
+function check_nik_ticket_limit(PDO $pdo, int $id_event, array $niks): array
+{
+    // Mandat CEO: max 5 tickets per NIK per event, across accounts.
+    $seen = [];
+    $stmt = $pdo->prepare(
+        "SELECT
+           (SELECT COUNT(*) FROM e_tickets et
+              JOIN transaksi t ON t.id_transaksi = et.id_transaksi
+             WHERE t.id_event = ? AND t.status_bayar = 'Paid' AND et.nik_peserta = ?)
+           +
+           (SELECT COUNT(*) FROM transaksi_peserta tp
+              JOIN transaksi t ON t.id_transaksi = tp.id_transaksi
+             WHERE t.id_event = ? AND t.status_bayar IN ('Pending','Waiting Verification')
+               AND tp.nik_peserta = ?)"
+    );
+    foreach ($niks as $nik) {
+        $nik = trim((string)$nik);
+        if ($nik === '' || isset($seen[$nik])) continue;
+        $seen[$nik] = true;
+        $stmt->execute([$id_event, $nik, $id_event, $nik]);
+        if ((int)$stmt->fetchColumn() >= MAX_TIKET_PER_EVENT) {
+            return ['ok' => false, 'msg' => 'NIK ' . $nik . ' sudah mencapai batas ' . MAX_TIKET_PER_EVENT . ' tiket untuk event ini.'];
+        }
+    }
+    return ['ok' => true, 'msg' => ''];
 }
 
 function check_user_active_reservation(PDO $pdo, int $id_user, int $id_event): bool

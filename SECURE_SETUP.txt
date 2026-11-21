@@ -1,0 +1,36 @@
+PENSI EVENTPRO — SECURE DEPLOYMENT
+=================================
+
+1. Database
+   - Create a MySQL database.
+   - Import the existing project schema/demo data (phpMyAdmin or mysql).
+   - Import database/secure_passwords.sql to replace the published demo staff
+     passwords. Keep PENSI_SECURE_CREDENTIALS.txt private.
+
+2. Database password
+   - The old source contained a real database password. Rotate the MySQL user
+     password in the hosting panel, then put the new values in config.local.php.
+
+3. Config
+   - Copy config.local.example.php to config.local.php.
+   - Fill host, database name, user, password.
+   - config.local.php stays in the application root, never inside a public
+     uploads directory.
+
+4. Webroot
+   - Upload every file in this folder to the website document root (htdocs).
+   - Keep .htaccess; it blocks src/, storage/, database/, config.local.php,
+     old tests/docs/installers and non-runtime files.
+   - Remove old files that are no longer part of this package (tests/, docs/,
+     install/, database/*.sql except secure_passwords.sql, the Windows .exe).
+
+5. PHP
+   - PHP 8.2 or newer, with pdo_mysql, mbstring, gd, fileinfo.
+   - storage/ and uploads/bukti/ must be writable by PHP.
+
+6. Verify
+   - Open /login.php, log in with the rotated admin credentials.
+   - Try /tests/functional_test.php and /src/Config/database.php: both must be
+     403/404, not executable.
+   - Change the demo customer passwords or delete unused demo users before
+     sharing the site.
