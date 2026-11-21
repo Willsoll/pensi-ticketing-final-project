@@ -15,9 +15,6 @@ function base_path(): string
     if ($base !== null) return $base;
     $script = str_replace(chr(92), '/', $_SERVER['SCRIPT_NAME'] ?? '/index.php');
     $dir = rtrim(str_replace(chr(92), '/', dirname($script)), '/');
-    if (basename($dir) === 'public') {
-        $dir = rtrim(str_replace(chr(92), '/', dirname($dir)), '/');
-    }
     if ($dir === '.' || $dir === '/') $dir = '';
     return $base = $dir;
 }
