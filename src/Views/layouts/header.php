@@ -15,7 +15,16 @@ $activeNav = $activeNav ?? '';
 $themeParam = $_GET['theme'] ?? null;
 if (is_string($themeParam) && preg_match('/^(0[1-9]|10)$/', $themeParam)) {
     $pensi_theme = $themeParam;
-    if (!headers_sent()) setcookie('pensi_theme', $pensi_theme, time() + 31536000, base_path() ?: '/');
+    if (!headers_sent()) {
+        $cookieSecure = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+        setcookie('pensi_theme', $pensi_theme, [
+            'expires' => time() + 31536000,
+            'path' => base_path() ?: '/',
+            'secure' => $cookieSecure,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+    }
 } else {
     $pensi_theme = $_COOKIE['pensi_theme'] ?? '07';
     if (!preg_match('/^(0[1-9]|10)$/', (string)$pensi_theme)) $pensi_theme = '07';
@@ -91,7 +100,10 @@ function nav_icon(string $name): string
                     <small><?= e(label_role($user['role'])) ?></small>
                 </span>
             </div>
-            <a href="<?= e(base_url('logout.php')) ?>" class="sidebar-logout">Keluar</a>
+            <form method="post" action="<?= e(base_url('logout.php')) ?>" class="sidebar-logout-form" style="margin:0;">
+                <?= csrf_field() ?>
+                <button type="submit" class="sidebar-logout" style="background:none;border:0;width:100%;text-align:left;cursor:pointer;font:inherit;">Keluar</button>
+            </form>
         </div>
     </aside>
 

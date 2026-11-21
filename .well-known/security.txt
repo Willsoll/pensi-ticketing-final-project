@@ -1,0 +1,4 @@
+Contact: mailto:darren.alexandersu@sekolah.pahoa.sch.id
+Expires: 2027-11-22T00:00:00.000Z
+Preferred-Languages: en, id
+Canonical: https://pensi2026.gt.tc/.well-known/security.txt

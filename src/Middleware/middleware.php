@@ -7,7 +7,7 @@ declare(strict_types=1);
 
 /**
  * Base path aplikasi agar bisa dijalankan di root domain maupun subfolder
- * (XAMPP htdocs/pensi, Laragon www/pensi, vhost, atau DocumentRoot langsung).
+ * (XAMPP/Laragon, vhost, atau DocumentRoot langsung).
  */
 function base_path(): string
 {
@@ -29,8 +29,18 @@ function base_url(string $path = ''): string
 /* ---------------------------------------------------------------------------
  * Session & header keamanan dasar
  * ------------------------------------------------------------------------- */
+if (!function_exists('pensi_is_https')) {
+    function pensi_is_https(): bool
+    {
+        if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') return true;
+        // InfinityFree and other TLS-terminating proxies expose this header.
+        $proto = $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '';
+        return strtolower(trim(explode(',', $proto)[0])) === 'https';
+    }
+}
+
 if (session_status() === PHP_SESSION_NONE) {
-    $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+    $https = pensi_is_https();
     session_name('PENSI_EVENTPRO');
     session_set_cookie_params([
         'lifetime' => 0,
@@ -46,11 +56,22 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+$requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+if (!in_array($requestMethod, ['GET', 'HEAD', 'POST'], true)) {
+    http_response_code(405);
+    header('Allow: GET, HEAD, POST');
+    exit;
+}
+
 if (!headers_sent()) {
     header('X-Content-Type-Options: nosniff');
     header('X-Frame-Options: DENY');
     header('Referrer-Policy: strict-origin-when-cross-origin');
     header('Permissions-Policy: geolocation=(), microphone=(), camera=()');
+    header("Content-Security-Policy: default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self' 'unsafe-inline'; connect-src 'self'");
+    if (pensi_is_https()) {
+        header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+    }
 }
 
 // PHP2Shell (CVE-2024-4577) — pantau versi PHP yang belum dipatch.
@@ -66,9 +87,45 @@ function e($value): string
     return htmlspecialchars((string)($value ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
+function mask_nik(?string $nik): string
+{
+    $nik = (string)($nik ?? '');
+    if ($nik === '') return '-';
+    $len = strlen($nik);
+    if ($len <= 8) return str_repeat('X', $len);
+    return substr($nik, 0, 4) . str_repeat('X', $len - 8) . substr($nik, -4);
+}
+
+if (!function_exists('pensi_mask_nik')) {
+    function pensi_mask_nik(?string $nik): string { return mask_nik($nik); }
+}
+
+function safe_banner_url(?string $url): string
+{
+    $url = trim((string)($url ?? ''));
+    if ($url === '') return '';
+    if (strpbrk($url, "
+
+	\"'()\;") !== false) return '';
+    if (str_starts_with($url, '/')) return $url;
+    if (filter_var($url, FILTER_VALIDATE_URL) && preg_match('#^https?://#i', $url)) return $url;
+    return '';
+}
+
 function format_rupiah(int $nominal): string
 {
     return 'Rp ' . number_format($nominal, 0, ',', '.');
+}
+
+function normalize_datetime_local(?string $value): ?string
+{
+    $value = trim((string)($value ?? ''));
+    if ($value === '') return null;
+    foreach (['Y-m-d\TH:i', 'Y-m-d H:i:s', 'Y-m-d H:i'] as $fmt) {
+        $dt = DateTime::createFromFormat($fmt, $value);
+        if ($dt instanceof DateTime) return $dt->format('Y-m-d H:i:s');
+    }
+    return null;
 }
 
 function format_tanggal(?string $dt, bool $withTime = true): string
@@ -178,6 +235,10 @@ function client_ip(): string
 
 function require_login(): void
 {
+    if (is_logged_in() && !headers_sent()) {
+        header('Cache-Control: no-store, private, no-cache, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
+    }
     if (!is_logged_in()) {
         set_flash('ERROR', 'Silakan login terlebih dahulu.');
         header('Location: login.php');
@@ -202,6 +263,10 @@ function require_role(array $allowed): void
 function catat_audit_log(PDO $pdo, ?int $id_user, string $aksi, string $entitas, string $keterangan): void
 {
     try {
+        $keterangan = preg_replace('/[
+
+	]+/', ' ', $keterangan) ?? '';
+        $keterangan = mb_substr($keterangan, 0, 1000);
         $stmt = $pdo->prepare('INSERT INTO audit_logs (id_user, aksi, entitas, keterangan, waktu)
                                VALUES (?, ?, ?, ?, NOW())');
         $stmt->execute([$id_user, mb_substr($aksi, 0, 80), mb_substr($entitas, 0, 60), $keterangan]);
@@ -217,8 +282,11 @@ function release_expired_transactions(PDO $pdo): int
 {
     try {
         $pdo->beginTransaction();
+        // Only unpaid Pending orders expire. Once a buyer uploads proof and
+        // the order becomes Waiting Verification, finance must be able to
+        // review it without the page-load sweep destroying the order.
         $stmt = $pdo->query("SELECT id_transaksi, id_voucher FROM transaksi
-                             WHERE status_bayar IN ('Pending','Waiting Verification')
+                             WHERE status_bayar = 'Pending'
                                AND batas_bayar_at < NOW()
                              FOR UPDATE");
         $rows = $stmt->fetchAll();
@@ -230,7 +298,7 @@ function release_expired_transactions(PDO $pdo): int
         $freeSeat = $pdo->prepare("UPDATE kursi_event SET status_kursi='Available' WHERE id_kursi = ? AND status_kursi='Locked'");
         $getDet   = $pdo->prepare('SELECT id_tier, jumlah, id_kursi_list FROM transaksi_detail WHERE id_transaksi = ?');
         $updTrx   = $pdo->prepare("UPDATE transaksi SET status_bayar='Expired' WHERE id_transaksi = ?");
-        $decVou   = $pdo->prepare('UPDATE voucher_promo SET kuota_pakai = GREATEST(0, kuota_pakai - 1) WHERE id_voucher = ?');
+        $decVou   = $pdo->prepare('UPDATE voucher_promo SET kuota_pakai = kuota_pakai + 1 WHERE id_voucher = ?');
 
         foreach ($rows as $r) {
             $getDet->execute([$r['id_transaksi']]);
@@ -259,6 +327,15 @@ function release_expired_transactions(PDO $pdo): int
 /* ---------------------------------------------------------------------------
  * Kode tiket & booking
  * ------------------------------------------------------------------------- */
+function maybe_release_expired_transactions(PDO $pdo): void
+{
+    if (!is_logged_in()) return;
+    $now = time();
+    if ($now - (int)($_SESSION['last_expiry_sweep'] ?? 0) < 60) return;
+    $_SESSION['last_expiry_sweep'] = $now;
+    release_expired_transactions($pdo);
+}
+
 function generate_kode_tiket(int $nomor_urut = 1): string
 {
     return 'TKT-' . date('Ymd') . '-' . strtoupper(bin2hex(random_bytes(5))) . '-' . max(1, $nomor_urut);
@@ -347,6 +424,33 @@ function check_user_ticket_limit(PDO $pdo, int $id_user, int $id_event, int $qty
     return ['ok' => true, 'used' => $used];
 }
 
+function check_nik_ticket_limit(PDO $pdo, int $id_event, array $niks): array
+{
+    // Mandat CEO: max 5 tickets per NIK per event, across accounts.
+    $seen = [];
+    $stmt = $pdo->prepare(
+        "SELECT
+           (SELECT COUNT(*) FROM e_tickets et
+              JOIN transaksi t ON t.id_transaksi = et.id_transaksi
+             WHERE t.id_event = ? AND t.status_bayar = 'Paid' AND et.nik_peserta = ?)
+           +
+           (SELECT COUNT(*) FROM transaksi_peserta tp
+              JOIN transaksi t ON t.id_transaksi = tp.id_transaksi
+             WHERE t.id_event = ? AND t.status_bayar IN ('Pending','Waiting Verification')
+               AND tp.nik_peserta = ?)"
+    );
+    foreach ($niks as $nik) {
+        $nik = trim((string)$nik);
+        if ($nik === '' || isset($seen[$nik])) continue;
+        $seen[$nik] = true;
+        $stmt->execute([$id_event, $nik, $id_event, $nik]);
+        if ((int)$stmt->fetchColumn() >= MAX_TIKET_PER_EVENT) {
+            return ['ok' => false, 'msg' => 'NIK ' . $nik . ' sudah mencapai batas ' . MAX_TIKET_PER_EVENT . ' tiket untuk event ini.'];
+        }
+    }
+    return ['ok' => true, 'msg' => ''];
+}
+
 function check_user_active_reservation(PDO $pdo, int $id_user, int $id_event): bool
 {
     $stmt = $pdo->prepare("SELECT COUNT(*) FROM transaksi
@@ -359,6 +463,35 @@ function check_user_active_reservation(PDO $pdo, int $id_user, int $id_event): b
 /* ---------------------------------------------------------------------------
  * Upload bukti bayar
  * ------------------------------------------------------------------------- */
+function bukti_upload_dir(): string
+{
+    static $dir = null;
+    if ($dir !== null) return $dir;
+
+    $root = dirname(__DIR__, 2); // application root (webroot in the flat layout)
+    $candidates = [];
+    $env = getenv('UPLOAD_BUKTI_DIR');
+    if (is_string($env) && trim($env) !== '') {
+        $candidates[] = trim($env);
+    }
+    // Preferred: outside the document root, so static web servers cannot serve
+    // payment proofs even when .htaccess is ignored (e.g. openresty).
+    $candidates[] = dirname($root) . DIRECTORY_SEPARATOR . 'pensi-storage' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'bukti';
+    // Fallback: inside storage/ (also denied by .htaccess where honored).
+    $candidates[] = $root . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'bukti';
+
+    foreach ($candidates as $candidate) {
+        if (!is_dir($candidate)) @mkdir($candidate, 0755, true);
+        if (is_dir($candidate) && is_writable($candidate)) {
+            $real = realpath($candidate);
+            $dir = $real !== false ? $real : $candidate;
+            return $dir;
+        }
+    }
+    $dir = $root . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'bukti';
+    return $dir;
+}
+
 function handle_bukti_upload(array $file, string $uploadDir): string
 {
     if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
@@ -378,6 +511,10 @@ function handle_bukti_upload(array $file, string $uploadDir): string
     }
     if (!is_dir($uploadDir) && !mkdir($uploadDir, 0755, true)) {
         throw new RuntimeException('Folder upload tidak tersedia.');
+    }
+    $dim = @getimagesize($file['tmp_name']);
+    if (!is_array($dim) || $dim[0] < 1 || $dim[1] < 1 || $dim[0] > 6000 || $dim[1] > 6000) {
+        throw new InvalidArgumentException('Dimensi gambar tidak valid (maksimal 6000 x 6000).');
     }
     $ext  = UPLOAD_ALLOWED_MIME[$mime];
     $rand = bin2hex(random_bytes(12));
