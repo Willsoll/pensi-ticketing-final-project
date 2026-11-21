@@ -78,7 +78,7 @@ Download [`PENSI_EVENTPRO_v6.2.2_PORTABLE.zip`](https://github.com/Willsoll/pens
 (25 MB): run `PENSI_EVENTPRO_Setup.exe`, choose XAMPP or Laragon, and it installs
 the app, imports the database, starts Apache/MySQL, and opens the site.
 
-See [`docs/PORTABILITY.md`](docs/PORTABILITY.md) for the path/portability audit and installer test matrix.
+See [`SOURCE_LAYOUT.md`](SOURCE_LAYOUT.md) for the source tree and [`docs/PORTABILITY.md`](docs/PORTABILITY.md) for the path/portability audit and installer test matrix.
 
 ## Security
 

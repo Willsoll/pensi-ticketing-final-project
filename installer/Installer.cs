@@ -95,8 +95,8 @@ internal static class Program
 
     private static string Menu()
     {
-        List<string> xampps = Existing(new string[] { "C:\\xampp", "D:\\xampp" });
-        List<string> laragons = Existing(new string[] { "C:\\laragon", "D:\\laragon", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "laragon") });
+        List<string> xampps = FindRoots("xampp");
+        List<string> laragons = FindRoots("laragon");
 
         Console.WriteLine("  Pilih hosting lokal yang ingin dipasang:");
         Console.WriteLine();
@@ -109,10 +109,65 @@ internal static class Program
         return (Console.ReadLine() ?? "Q").Trim().ToUpperInvariant();
     }
 
-    private static List<string> Existing(string[] paths)
+    private static List<string> FindRoots(string kind)
     {
         List<string> found = new List<string>();
-        foreach (string p in paths) if (Directory.Exists(p)) found.Add(p);
+        HashSet<string> seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        string folder = kind == "xampp" ? "htdocs" : "www";
+
+        Action<string> add = delegate(string candidate)
+        {
+            if (string.IsNullOrWhiteSpace(candidate)) return;
+            try
+            {
+                string root = Path.GetFullPath(candidate.Trim().Trim('"')).TrimEnd('\\');
+                if (root.Length <= 2) return;
+                if (!Directory.Exists(Path.Combine(root, folder))) return;
+                if (seen.Add(root)) found.Add(root);
+            }
+            catch { }
+        };
+
+        if (kind == "xampp")
+        {
+            add(Environment.GetEnvironmentVariable("XAMPP_HOME"));
+        }
+        else
+        {
+            add(Environment.GetEnvironmentVariable("LARAGON_ROOT"));
+            add(Environment.GetEnvironmentVariable("LARAGON_HOME"));
+            add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "laragon"));
+        }
+
+        try
+        {
+            foreach (DriveInfo drive in DriveInfo.GetDrives())
+            {
+                if (!drive.IsReady) continue;
+                if (drive.DriveType != DriveType.Fixed && drive.DriveType != DriveType.Removable) continue;
+                add(Path.Combine(drive.RootDirectory.FullName, kind));
+            }
+        }
+        catch { }
+
+        string[] procNames = kind == "xampp" ? new string[] { "httpd", "mysqld" } : new string[] { "httpd", "mysqld", "mariadbd" };
+        foreach (string procName in procNames)
+        {
+            try
+            {
+                foreach (Process p in Process.GetProcessesByName(procName))
+                {
+                    try
+                    {
+                        string exe = (p.MainModule.FileName ?? "").Replace('/', '\\');
+                        int idx = exe.IndexOf("\\" + kind + "\\", StringComparison.OrdinalIgnoreCase);
+                        if (idx > 0) add(exe.Substring(0, idx) + "\\" + kind);
+                    }
+                    catch { }
+                }
+            }
+            catch { }
+        }
         return found;
     }
 
@@ -121,12 +176,12 @@ internal static class Program
         string root = "";
         if (choice == "1")
         {
-            List<string> found = Existing(new string[] { "C:\\xampp", "D:\\xampp" });
+            List<string> found = FindRoots("xampp");
             root = found.Count > 0 ? found[0] : AskPath("XAMPP");
         }
         else if (choice == "2")
         {
-            List<string> found = Existing(new string[] { "C:\\laragon", "D:\\laragon", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "laragon") });
+            List<string> found = FindRoots("laragon");
             root = found.Count > 0 ? found[0] : AskPath("Laragon");
         }
         else if (choice == "3")
@@ -149,9 +204,31 @@ internal static class Program
         return p;
     }
 
+    private static string ApacheDocumentRoot(string apacheRoot)
+    {
+        try
+        {
+            string conf = Path.Combine(apacheRoot, "conf", "httpd.conf");
+            if (!File.Exists(conf)) return "";
+            foreach (string raw in File.ReadAllLines(conf))
+            {
+                string t = raw.Trim();
+                if (t.StartsWith("#") || !t.StartsWith("DocumentRoot", StringComparison.OrdinalIgnoreCase)) continue;
+                int q1 = t.IndexOf('"');
+                int q2 = t.LastIndexOf('"');
+                string val = (q1 >= 0 && q2 > q1) ? t.Substring(q1 + 1, q2 - q1 - 1) : t.Substring("DocumentRoot".Length).Trim();
+                val = Environment.ExpandEnvironmentVariables(val).Replace('/', '\\');
+                if (val.Contains("${")) continue;
+                if (Directory.Exists(val)) return Path.GetFullPath(val).TrimEnd('\\');
+            }
+        }
+        catch { }
+        return "";
+    }
+
     private static void DetectStack(string root)
     {
-        _installRoot = root.TrimEnd('\\');
+        _installRoot = Path.GetFullPath(root.Trim().Trim('"')).TrimEnd('\\');
         if (!Directory.Exists(_installRoot)) throw new Exception("Folder tidak ditemukan: " + _installRoot);
 
         string htdocs = Path.Combine(_installRoot, "htdocs");
@@ -159,9 +236,12 @@ internal static class Program
 
         if (Directory.Exists(htdocs))
         {
-            _webRoot = htdocs;
-            _mysqlClient = Path.Combine(_installRoot, "mysql", "bin", "mysql.exe");
-            _mysqld = Path.Combine(_installRoot, "mysql", "bin", "mysqld.exe");
+            _webRoot = ApacheDocumentRoot(Path.Combine(_installRoot, "apache"));
+            if (_webRoot == "") _webRoot = htdocs;
+            _mysqlClient = FindFile(Path.Combine(_installRoot, "mysql", "bin"), "mysql.exe");
+            if (_mysqlClient == "") _mysqlClient = FindFile(Path.Combine(_installRoot, "mysql", "bin"), "mariadb.exe");
+            _mysqld = FindFile(Path.Combine(_installRoot, "mysql", "bin"), "mysqld.exe");
+            if (_mysqld == "") _mysqld = FindFile(Path.Combine(_installRoot, "mysql", "bin"), "mariadbd.exe");
             _apache = Path.Combine(_installRoot, "apache", "bin", "httpd.exe");
             _mysqlArgs = "--defaults-file=" + Quote(Path.Combine(_installRoot, "mysql", "bin", "my.ini"));
         }
@@ -233,6 +313,7 @@ internal static class Program
         }
         else
         {
+            EnsureMysqlStarted();
             EnsureDbPassword();
             string dump = Path.Combine(_appTarget, "database", "db_tiket_event_pro.sql");
             if (!File.Exists(dump)) throw new Exception("Dump database tidak ditemukan: " + dump);
@@ -283,17 +364,43 @@ internal static class Program
         Console.ResetColor();
     }
 
+    private static void EnsureMysqlStarted()
+    {
+        if (PortOpen(3306)) return;
+        if (_mysqld == "" || !File.Exists(_mysqld))
+            throw new Exception("MySQL belum berjalan dan mysqld.exe tidak ditemukan. Buka XAMPP/Laragon lalu klik Start MySQL.");
+
+        Console.WriteLine("     MySQL belum berjalan, menyalakan...");
+        try { StartProcess(_mysqld, _mysqlArgs, Path.GetDirectoryName(_mysqld)); }
+        catch (Exception ex) { Error("MySQL: " + ex.Message); }
+
+        for (int i = 0; i < 30; i++)
+        {
+            if (PortOpen(3306))
+            {
+                Console.WriteLine("     MySQL siap.");
+                return;
+            }
+            Thread.Sleep(1000);
+        }
+        throw new Exception("MySQL tidak mau menyala. Buka XAMPP/Laragon, klik Start MySQL, lalu jalankan installer lagi.");
+    }
+
     private static void EnsureDbPassword()
     {
-        if (_silent) return;
-        if (_dbPass == "")
-        {
-            Console.Write("  Password MySQL root (kosongkan jika default XAMPP/Laragon): ");
-            _dbPass = ReadPassword();
-            Console.WriteLine();
-        }
+        // Try the current value first. Default XAMPP/Laragon root has no password.
+        if (TestMysql()) return;
+        if (_silent)
+            throw new Exception("Tidak bisa login MySQL sebagai root tanpa password. Jika root memakai password, jalankan: PENSI_EVENTPRO_Setup.exe --db-pass=PASSWORD");
+
+        Console.WriteLine();
+        Error("Login root tanpa password gagal.");
+        Console.Write("  Password MySQL root (kosongkan jika tidak ada): ");
+        _dbPass = ReadPassword();
+        Console.WriteLine();
+
         int tries = 0;
-        while (!TestMysql() && tries < 3)
+        while (!TestMysql() && tries < 2)
         {
             Error("Tidak bisa terhubung ke MySQL dengan user root.");
             Console.Write("  Coba password lain (kosong = tanpa password): ");
@@ -301,6 +408,8 @@ internal static class Program
             Console.WriteLine();
             tries++;
         }
+        if (!TestMysql())
+            throw new Exception("Tidak bisa terhubung ke MySQL sebagai root. Pastikan MySQL berjalan dan password benar.");
     }
 
     private static string ReadPassword()
