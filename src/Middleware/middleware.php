@@ -236,8 +236,11 @@ function release_expired_transactions(PDO $pdo): int
 {
     try {
         $pdo->beginTransaction();
+        // Only unpaid Pending orders expire. Once a buyer uploads proof and
+        // the order becomes Waiting Verification, finance must be able to
+        // review it without the page-load sweep destroying the order.
         $stmt = $pdo->query("SELECT id_transaksi, id_voucher FROM transaksi
-                             WHERE status_bayar IN ('Pending','Waiting Verification')
+                             WHERE status_bayar = 'Pending'
                                AND batas_bayar_at < NOW()
                              FOR UPDATE");
         $rows = $stmt->fetchAll();
