@@ -72,6 +72,12 @@ Portable one-command installer (from the `v6.1-portable` tag): `php install/inst
 Demo accounts (password `password123`): `admin.eo@eventpro.id`, `finance@eventpro.id`,
 `gate@eventpro.id`, `dewi@student.id`. Full list: [`docs/TEST_ACCOUNTS.md`](docs/TEST_ACCOUNTS.md).
 
+## Windows one-click installer
+
+Download [`PENSI_EVENTPRO_v6.2_PORTABLE.zip`](https://github.com/Willsoll/pensi-ticketing-final-project/releases/tag/v6.2-portable)
+(25 MB): run `PENSI_EVENTPRO_Setup.exe`, choose XAMPP or Laragon, and it installs
+the app, imports the database, starts Apache/MySQL, and opens the site.
+
 ## Security
 
 - bcrypt cost-12, automatic rehash, session ID regeneration on login
