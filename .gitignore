@@ -77,3 +77,7 @@ public/uploads/bukti/*
 /uploads/
 /.htaccess
 /diagnose_kategori.php
+
+# installer build artifacts
+installer/app.zip
+installer/*.exe
