@@ -6,6 +6,8 @@ PENSI EVENTPRO — SECURE DEPLOYMENT
    - Import the existing project schema/demo data (phpMyAdmin or mysql).
    - Import database/secure_passwords.sql to replace the published demo staff
      passwords. Keep PENSI_SECURE_CREDENTIALS.txt private.
+   - If you re-run database/seed.php, set SEED_PASSWORD (min 12 chars); the
+     script refuses to use a default password.
 
 2. Database password
    - The old source contained a real database password. Rotate the MySQL user
@@ -26,7 +28,11 @@ PENSI EVENTPRO — SECURE DEPLOYMENT
 
 5. PHP
    - PHP 8.2 or newer, with pdo_mysql, mbstring, gd, fileinfo.
-   - storage/ and uploads/bukti/ must be writable by PHP.
+   - storage/ must be writable by PHP.
+   - Payment proofs are stored in ../pensi-storage/uploads/bukti (outside the
+     webroot) when the parent directory is writable; otherwise they fall back
+     to storage/uploads/bukti. Keep that directory writable and never expose it
+     through the web server.
 
 6. Verify
    - Open /login.php, log in with the rotated admin credentials.

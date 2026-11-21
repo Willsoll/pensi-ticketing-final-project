@@ -45,7 +45,7 @@ if (!preg_match('#^uploads/bukti/[A-Za-z0-9._-]+$#', $rel)) {
     exit;
 }
 
-$base = realpath(__DIR__ . '/uploads/bukti');
+$base = realpath(bukti_upload_dir());
 $file = realpath(__DIR__ . '/' . $rel);
 if ($base === false || $file === false || !is_file($file)) {
     http_response_code(404);

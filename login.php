@@ -143,7 +143,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $cek = $pdo->prepare("SELECT COUNT(*) FROM users WHERE nik = ? OR email = ?");
             $cek->execute([$regOld['nik'], $regOld['email']]);
             if ((int)$cek->fetchColumn() > 0) {
-                $regErrors[] = 'NIK atau Email tersebut sudah terdaftar.';
+                $regErrors[] = 'NIK atau Email tidak dapat digunakan.';
             } else {
                 try {
                     $hashed = password_hash($passReg, PASSWORD_BCRYPT, ['cost' => 12]);

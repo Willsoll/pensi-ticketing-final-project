@@ -47,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
         try {
-            $path = handle_bukti_upload($_FILES['bukti'] ?? null, __DIR__ . '/uploads/bukti');
+            $path = handle_bukti_upload($_FILES['bukti'] ?? null, bukti_upload_dir());
         } catch (Throwable $e) {
             error_log('[BUKTI_UPLOAD] ' . $e->getMessage());
             set_flash('ERROR', $e->getMessage() ?: 'Gagal mengunggah bukti bayar.');
@@ -155,7 +155,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $idKursiChosen = [];
         if ($tipeVenue === 'Seated') {
             if (empty($kursiIds)) {
-                $stmt = $pdo->prepare('SELECT id_kursi FROM kursi_event WHERE id_tier = ? AND status_kursi = "Available" ORDER BY nomor_kursi LIMIT ?');
+                $stmt = $pdo->prepare('SELECT id_kursi FROM kursi_event WHERE id_tier = ? AND status_kursi = "Available" ORDER BY nomor_kursi LIMIT ? FOR UPDATE');
                 $stmt->execute([$id_tier, $qty]);
                 $auto = $stmt->fetchAll();
                 if (count($auto) < $qty) {

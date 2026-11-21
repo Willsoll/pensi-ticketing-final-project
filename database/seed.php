@@ -18,7 +18,13 @@ $pdo = new PDO("mysql:host={$seedHost};port={$seedPort};dbname={$seedName};chars
 $pdo->exec("SET time_zone = '+07:00'");
 $pdo->beginTransaction();
 
-$hash = password_hash('password123', PASSWORD_BCRYPT, ['cost' => 12]);
+$seedPassword = getenv('SEED_PASSWORD');
+if (!is_string($seedPassword) || strlen($seedPassword) < 12) {
+    fwrite(STDERR, "Set SEED_PASSWORD (min 12 chars) before running the seed.
+");
+    exit(1);
+}
+$hash = password_hash($seedPassword, PASSWORD_BCRYPT, ['cost' => 12]);
 
 /* ---------------- users ---------------- */
 $staff = [

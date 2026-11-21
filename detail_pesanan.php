@@ -123,7 +123,7 @@ require __DIR__ . '/src/Views/layouts/header.php';
             <?php foreach ($peserta as $p): ?>
             <tr>
                 <td><?= e($p['nama_peserta']) ?></td>
-                <td><code><?= e($p['nik_peserta']) ?></code></td>
+                <td><code><?= e(mask_nik($p['nik_peserta'])) ?></code></td>
                 <td><?= e($p['nama_tier'] ?? '-') ?></td>
                 <td><?= $p['nomor_kursi'] ? e($p['nomor_kursi']) : 'Free Standing' ?></td>
                 <td><?= !empty($p['kode_tiket']) ? e($p['kode_tiket']) : '-' ?></td>

@@ -46,6 +46,13 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+$requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+if (!in_array($requestMethod, ['GET', 'HEAD', 'POST'], true)) {
+    http_response_code(405);
+    header('Allow: GET, HEAD, POST');
+    exit;
+}
+
 if (!headers_sent()) {
     header('X-Content-Type-Options: nosniff');
     header('X-Frame-Options: DENY');
@@ -67,6 +74,15 @@ if (version_compare(PHP_VERSION, '8.2.35', '<')) {
 function e($value): string
 {
     return htmlspecialchars((string)($value ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
+
+function mask_nik(?string $nik): string
+{
+    $nik = (string)($nik ?? '');
+    if ($nik === '') return '-';
+    $len = strlen($nik);
+    if ($len <= 8) return str_repeat('X', $len);
+    return substr($nik, 0, 4) . str_repeat('X', $len - 8) . substr($nik, -4);
 }
 
 function format_rupiah(int $nominal): string
@@ -389,6 +405,35 @@ function check_user_active_reservation(PDO $pdo, int $id_user, int $id_event): b
 /* ---------------------------------------------------------------------------
  * Upload bukti bayar
  * ------------------------------------------------------------------------- */
+function bukti_upload_dir(): string
+{
+    static $dir = null;
+    if ($dir !== null) return $dir;
+
+    $root = dirname(__DIR__, 2); // application root (webroot in the flat layout)
+    $candidates = [];
+    $env = getenv('UPLOAD_BUKTI_DIR');
+    if (is_string($env) && trim($env) !== '') {
+        $candidates[] = trim($env);
+    }
+    // Preferred: outside the document root, so static web servers cannot serve
+    // payment proofs even when .htaccess is ignored (e.g. openresty).
+    $candidates[] = dirname($root) . DIRECTORY_SEPARATOR . 'pensi-storage' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'bukti';
+    // Fallback: inside storage/ (also denied by .htaccess where honored).
+    $candidates[] = $root . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'bukti';
+
+    foreach ($candidates as $candidate) {
+        if (!is_dir($candidate)) @mkdir($candidate, 0755, true);
+        if (is_dir($candidate) && is_writable($candidate)) {
+            $real = realpath($candidate);
+            $dir = $real !== false ? $real : $candidate;
+            return $dir;
+        }
+    }
+    $dir = $root . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'bukti';
+    return $dir;
+}
+
 function handle_bukti_upload(array $file, string $uploadDir): string
 {
     if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {

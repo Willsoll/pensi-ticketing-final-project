@@ -15,7 +15,16 @@ $activeNav = $activeNav ?? '';
 $themeParam = $_GET['theme'] ?? null;
 if (is_string($themeParam) && preg_match('/^(0[1-9]|10)$/', $themeParam)) {
     $pensi_theme = $themeParam;
-    if (!headers_sent()) setcookie('pensi_theme', $pensi_theme, time() + 31536000, base_path() ?: '/');
+    if (!headers_sent()) {
+        $cookieSecure = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+        setcookie('pensi_theme', $pensi_theme, [
+            'expires' => time() + 31536000,
+            'path' => base_path() ?: '/',
+            'secure' => $cookieSecure,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+    }
 } else {
     $pensi_theme = $_COOKIE['pensi_theme'] ?? '07';
     if (!preg_match('/^(0[1-9]|10)$/', (string)$pensi_theme)) $pensi_theme = '07';
