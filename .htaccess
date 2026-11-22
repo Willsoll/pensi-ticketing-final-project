@@ -17,7 +17,7 @@ DirectoryIndex index.php
 </IfModule>
 
 # Deny non-runtime files and application internals.
-<FilesMatch "(^\.(env|git|htaccess|htpasswd)|\.(sql|log|ini|bak|key|md|txt|zip|exe|lock|sh))$">
+<FilesMatch "(^\.(env|git|htaccess|htpasswd)|\.(sql|log|ini|bak|key|md|zip|exe|lock|sh))$">
     <IfModule mod_authz_core.c>
         Require all denied
     </IfModule>
